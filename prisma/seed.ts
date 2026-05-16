@@ -227,6 +227,16 @@ function generateRallyMultipliers(minGain: number, maxGain: number): Record<stri
 async function main() {
   console.log("Seeding database...");
 
+  // Clear existing data in correct order (respect foreign keys)
+  await prisma.tournamentRegistration.deleteMany();
+  await prisma.transaction.deleteMany();
+  await prisma.holding.deleteMany();
+  await prisma.stockPrice.deleteMany();
+  await prisma.portfolio.deleteMany();
+  await prisma.tournament.deleteMany();
+  await prisma.stock.deleteMany();
+  await prisma.simulationEvent.deleteMany();
+
   const now = new Date();
   const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
