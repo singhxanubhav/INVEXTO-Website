@@ -138,67 +138,30 @@ const keyStatsData: Record<string, Record<string, number>> = {
   "HDFCLIFE.NS": { ttmEps: 15, pbRatio: 4.2, sectorPe: 22, bookValue: 155, dividendYield: 0.5, beta: 0.9, avgVolume20d: 4200000, avgDeliveryPct20d: 50 },
 };
 
-const simulationEvents = [
-  {
-    name: "COVID-19 Crash",
-    description: "Global pandemic triggers sharp market sell-off. Feb–Apr 2020. Most stocks fell 20-50%. IT and FMCG showed relative resilience.",
-    startRealDate: new Date("2020-02-20"),
-    endRealDate: new Date("2020-04-30"),
-    durationDays: 70,
-    priceMultipliers: generateCrashMultipliers(0.35, 0.45),
-  },
-  {
-    name: "COVID Recovery Rally",
-    description: "Markets rebound sharply after pandemic lows driven by liquidity and vaccine optimism. May–Dec 2020.",
-    startRealDate: new Date("2020-05-01"),
-    endRealDate: new Date("2020-12-31"),
-    durationDays: 245,
-    priceMultipliers: generateRallyMultipliers(0.25, 0.40),
-  },
-  {
-    name: "2008 Global Financial Crisis",
-    description: "Subprime mortgage crisis triggers worldwide recession. Most Indian stocks fell 40-60%.",
-    startRealDate: new Date("2008-09-15"),
-    endRealDate: new Date("2008-11-30"),
-    durationDays: 76,
-    priceMultipliers: generateCrashMultipliers(0.45, 0.55),
-  },
-  {
-    name: "2016 Demonetisation",
-    description: "India's sudden currency ban causes short-term market disruption. Nov–Dec 2016.",
-    startRealDate: new Date("2016-11-08"),
-    endRealDate: new Date("2016-12-31"),
-    durationDays: 53,
-    priceMultipliers: generateCrashMultipliers(0.10, 0.25),
-  },
-  {
-    name: "2020-2021 Bull Market",
-    description: "Historic bull run driven by retail participation, low interest rates, and economic reopening. Jan–Oct 2021.",
-    startRealDate: new Date("2021-01-01"),
-    endRealDate: new Date("2021-10-31"),
-    durationDays: 304,
-    priceMultipliers: generateRallyMultipliers(0.25, 0.45),
-  },
-  {
-    name: "2022 Global Inflation Selloff",
-    description: "Rising interest rates and inflation fears cause broad market correction. IT stocks hit hardest. Jan–Jun 2022.",
-    startRealDate: new Date("2022-01-01"),
-    endRealDate: new Date("2022-06-30"),
-    durationDays: 181,
-    priceMultipliers: generateCrashMultipliers(0.20, 0.35),
-  },
-  {
-    name: "2023 Nifty 50 ATH Rally",
-    description: "Markets hit all-time highs driven by strong domestic flows and political stability. Nov–Dec 2023.",
-    startRealDate: new Date("2023-11-01"),
-    endRealDate: new Date("2023-12-31"),
-    durationDays: 61,
-    priceMultipliers: generateRallyMultipliers(0.10, 0.20),
-  },
-];
+function generatePriceArray(
+  finalMultiplier: number,
+  days: number,
+  volatility: number
+): number[] {
+  const arr: number[] = [];
+  for (let i = 0; i < days; i++) {
+    const progress = days > 1 ? i / (days - 1) : 1;
+    const target = 1 + (finalMultiplier - 1) * progress;
+    const noise = (Math.random() - 0.5) * volatility;
+    arr.push(Number((target + noise).toFixed(4)));
+  }
+  if (arr.length > 0) {
+    arr[arr.length - 1] = Number(finalMultiplier.toFixed(4));
+  }
+  return arr;
+}
 
-function generateCrashMultipliers(minDrop: number, maxDrop: number): Record<string, number> {
-  const result: Record<string, number> = {};
+function generateCrashArrays(
+  minDrop: number,
+  maxDrop: number,
+  days: number
+): Record<string, number[]> {
+  const result: Record<string, number[]> = {};
   for (const s of stocks) {
     let resilience = 1.0;
     if (s.sector === "IT") resilience = 0.85;
@@ -206,23 +169,88 @@ function generateCrashMultipliers(minDrop: number, maxDrop: number): Record<stri
     else if (s.sector === "Pharma") resilience = 0.85;
     else if (s.sector === "Telecom") resilience = 0.90;
     const drop = (minDrop + Math.random() * (maxDrop - minDrop)) * resilience;
-    result[s.symbol] = 1 - drop;
+    const finalMultiplier = 1 - drop;
+    result[s.symbol] = generatePriceArray(finalMultiplier, days, 0.015);
   }
   return result;
 }
 
-function generateRallyMultipliers(minGain: number, maxGain: number): Record<string, number> {
-  const result: Record<string, number> = {};
+function generateRallyArrays(
+  minGain: number,
+  maxGain: number,
+  days: number
+): Record<string, number[]> {
+  const result: Record<string, number[]> = {};
   for (const s of stocks) {
     let bonus = 0;
     if (s.sector === "IT") bonus = 0.05;
     else if (s.sector === "Pharma") bonus = 0.05;
     else if (s.sector === "Consumer") bonus = 0.03;
     const gain = minGain + Math.random() * (maxGain - minGain) + bonus;
-    result[s.symbol] = 1 + gain;
+    const finalMultiplier = 1 + gain;
+    result[s.symbol] = generatePriceArray(finalMultiplier, days, 0.018);
   }
   return result;
 }
+
+const eventConfigs = [
+  {
+    name: "COVID-19 Crash",
+    description: "Global pandemic triggers sharp market sell-off. Feb–Apr 2020. Most stocks fell 20-50%. IT and FMCG showed relative resilience.",
+    startRealDate: new Date("2020-02-20"),
+    endRealDate: new Date("2020-04-30"),
+    durationDays: 70,
+    gen: (d: number) => generateCrashArrays(0.35, 0.45, d),
+  },
+  {
+    name: "COVID Recovery Rally",
+    description: "Markets rebound sharply after pandemic lows driven by liquidity and vaccine optimism. May–Dec 2020.",
+    startRealDate: new Date("2020-05-01"),
+    endRealDate: new Date("2020-12-31"),
+    durationDays: 245,
+    gen: (d: number) => generateRallyArrays(0.25, 0.40, d),
+  },
+  {
+    name: "2008 Global Financial Crisis",
+    description: "Subprime mortgage crisis triggers worldwide recession. Most Indian stocks fell 40-60%.",
+    startRealDate: new Date("2008-09-15"),
+    endRealDate: new Date("2008-11-30"),
+    durationDays: 76,
+    gen: (d: number) => generateCrashArrays(0.45, 0.55, d),
+  },
+  {
+    name: "2016 Demonetisation",
+    description: "India's sudden currency ban causes short-term market disruption. Nov–Dec 2016.",
+    startRealDate: new Date("2016-11-08"),
+    endRealDate: new Date("2016-12-31"),
+    durationDays: 53,
+    gen: (d: number) => generateCrashArrays(0.10, 0.25, d),
+  },
+  {
+    name: "2020-2021 Bull Market",
+    description: "Historic bull run driven by retail participation, low interest rates, and economic reopening. Jan–Oct 2021.",
+    startRealDate: new Date("2021-01-01"),
+    endRealDate: new Date("2021-10-31"),
+    durationDays: 304,
+    gen: (d: number) => generateRallyArrays(0.25, 0.45, d),
+  },
+  {
+    name: "2022 Global Inflation Selloff",
+    description: "Rising interest rates and inflation fears cause broad market correction. IT stocks hit hardest. Jan–Jun 2022.",
+    startRealDate: new Date("2022-01-01"),
+    endRealDate: new Date("2022-06-30"),
+    durationDays: 181,
+    gen: (d: number) => generateCrashArrays(0.20, 0.35, d),
+  },
+  {
+    name: "2023 Nifty 50 ATH Rally",
+    description: "Markets hit all-time highs driven by strong domestic flows and political stability. Nov–Dec 2023.",
+    startRealDate: new Date("2023-11-01"),
+    endRealDate: new Date("2023-12-31"),
+    durationDays: 61,
+    gen: (d: number) => generateRallyArrays(0.10, 0.20, d),
+  },
+];
 
 async function main() {
   console.log("Seeding database...");
@@ -279,11 +307,15 @@ async function main() {
     console.log(`  Created stock: ${stock.symbol} @ ₹${price} (prev: ₹${prevClose}, ${change}%)`);
   }
 
-  for (const event of simulationEvents) {
+  for (const cfg of eventConfigs) {
+    const { gen, ...eventData } = cfg;
     await prisma.simulationEvent.create({
-      data: event,
+      data: {
+        ...eventData,
+        priceMultipliers: gen(eventData.durationDays),
+      },
     });
-    console.log(`  Created simulation event: ${event.name}`);
+    console.log(`  Created simulation event: ${cfg.name}`);
   }
 
   console.log("Seeding complete!");

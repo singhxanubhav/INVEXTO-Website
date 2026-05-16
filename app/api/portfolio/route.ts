@@ -31,10 +31,21 @@ export async function GET(request: NextRequest) {
     });
 
     if (!portfolio) {
-      return NextResponse.json(
-        { success: false, error: "Portfolio not found" },
-        { status: 404 }
-      );
+      const newPortfolio = await prisma.portfolio.create({
+        data: { userId: user.id, mode: "regular", cashBalance: 100000 },
+      });
+      return NextResponse.json({
+        success: true,
+        data: {
+          holdings: [],
+          cashBalance: Number(newPortfolio.cashBalance),
+          totalInvested: 0,
+          totalCurrentValue: Number(newPortfolio.cashBalance),
+          unrealizedGain: 0,
+          todayGain: 0,
+          realizedGainTillDate: 0,
+        },
+      });
     }
 
     const holdings = portfolio.holdings.map((h) => {

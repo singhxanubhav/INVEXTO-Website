@@ -129,8 +129,59 @@ export interface SimulationEvent {
   startRealDate: string;
   endRealDate: string;
   durationDays: number;
-  priceMultipliers: Record<string, number>;
+  priceMultipliers: Record<string, number[]>;
 }
+
+export interface SimEvent {
+  id: string;
+  name: string;
+  description: string;
+  startRealDate: string;
+  endRealDate: string;
+  durationDays: number;
+  type: "crash" | "rally";
+}
+
+export interface SimTransaction {
+  symbol: string;
+  type: "buy" | "sell";
+  qty: number;
+  price: number;
+  day: number;
+  total: number;
+}
+
+export interface SimState {
+  phase: "idle" | "running" | "paused" | "finished";
+  day: number;
+  totalDays: number;
+  eventName: string;
+  eventId: string;
+  basePrices: Record<string, number>;
+  stocks: { symbol: string; name: string; sector: string }[];
+  multipliers: Record<string, number[]>;
+  cashBalance: number;
+  holdings: Record<string, { qty: number; avgBuyPrice: number }>;
+  transactions: SimTransaction[];
+  startDate: string;
+}
+
+export interface SimStartData {
+  event: SimEvent;
+  stocks: { symbol: string; name: string; sector: string }[];
+  basePrices: Record<string, number>;
+  multipliers: Record<string, number[]>;
+  startingCash: number;
+}
+
+export type SimAction =
+  | { type: "START"; payload: SimStartData }
+  | { type: "TICK" }
+  | { type: "BUY"; payload: { symbol: string; qty: number; price: number } }
+  | { type: "SELL"; payload: { symbol: string; qty: number; price: number } }
+  | { type: "PAUSE" }
+  | { type: "RESUME" }
+  | { type: "END" };
 
 export interface ApiResponse<T> {
   success: boolean;
