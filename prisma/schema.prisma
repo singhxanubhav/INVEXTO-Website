@@ -1,0 +1,141 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PriceType {
+  live
+  historical
+  simulated
+}
+
+enum PortfolioMode {
+  regular
+  tournament
+}
+
+enum TournamentStatus {
+  upcoming
+  active
+  completed
+}
+
+enum TransactionType {
+  buy
+  sell
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String
+  email        String   @unique
+  upiId        String?
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  portfolios    Portfolio[]
+  registrations TournamentRegistration[]
+}
+
+model Stock {
+  id        String  @id @default(uuid()) @db.Uuid
+  symbol    String  @unique
+  name      String
+  sector    String
+  faceValue Decimal @db.Decimal(10, 2)
+  isActive  Boolean @default(true)
+
+  holdings      Holding[]
+  stockPrices   StockPrice[]
+  transactions  Transaction[]
+}
+
+model StockPrice {
+  id        String    @id @default(uuid()) @db.Uuid
+  stockId   String    @db.Uuid
+  price     Decimal   @db.Decimal(12, 2)
+  volume    BigInt
+  timestamp DateTime
+  priceType PriceType
+
+  stock Stock @relation(fields: [stockId], references: [id])
+}
+
+model Portfolio {
+  id           String        @id @default(uuid()) @db.Uuid
+  userId       String        @db.Uuid
+  mode         PortfolioMode
+  tournamentId String?       @db.Uuid
+  cashBalance  Decimal       @default(100000) @db.Decimal(14, 2)
+  createdAt    DateTime      @default(now())
+
+  user         User          @relation(fields: [userId], references: [id])
+  tournament   Tournament?   @relation(fields: [tournamentId], references: [id])
+  holdings     Holding[]
+  transactions Transaction[]
+}
+
+model Holding {
+  id          String  @id @default(uuid()) @db.Uuid
+  portfolioId String  @db.Uuid
+  stockId     String  @db.Uuid
+  quantity    Int
+  avgBuyPrice Decimal @db.Decimal(12, 2)
+
+  portfolio Portfolio @relation(fields: [portfolioId], references: [id])
+  stock     Stock     @relation(fields: [stockId], references: [id])
+
+  @@unique([portfolioId, stockId])
+}
+
+model Transaction {
+  id           String          @id @default(uuid()) @db.Uuid
+  portfolioId  String          @db.Uuid
+  stockId      String          @db.Uuid
+  type         TransactionType
+  quantity     Int
+  price        Decimal         @db.Decimal(12, 2)
+  total        Decimal         @db.Decimal(14, 2)
+  realizedGain Decimal?        @db.Decimal(14, 2)
+  createdAt    DateTime        @default(now())
+
+  portfolio Portfolio @relation(fields: [portfolioId], references: [id])
+  stock     Stock     @relation(fields: [stockId], references: [id])
+}
+
+model Tournament {
+  id        String           @id @default(uuid()) @db.Uuid
+  startDate DateTime
+  endDate   DateTime
+  status    TournamentStatus
+  prizePool Json             @default("{}")
+
+  portfolios   Portfolio[]
+  registrations TournamentRegistration[]
+}
+
+model TournamentRegistration {
+  id           String   @id @default(uuid()) @db.Uuid
+  tournamentId String   @db.Uuid
+  userId       String   @db.Uuid
+  registeredAt DateTime @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id])
+  user       User       @relation(fields: [userId], references: [id])
+
+  @@unique([tournamentId, userId])
+}
+
+model SimulationEvent {
+  id              String @id @default(uuid()) @db.Uuid
+  name            String
+  description     String
+  startRealDate   DateTime
+  endRealDate     DateTime
+  durationDays    Int
+  priceMultipliers Json  @default("{}")
+}
