@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { TrendingUp, TrendingDown, Minus, Wallet, ShoppingCart } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, ShoppingCart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,7 +24,11 @@ export default function StockDetailPage({
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"buy" | "sell">("buy");
   const [cashBalance, setCashBalance] = useState(0);
+  const [tourCashBalance, setTourCashBalance] = useState(0);
   const [heldQuantity, setHeldQuantity] = useState(0);
+  const [tourHeldQuantity, setTourHeldQuantity] = useState(0);
+  const [tournamentMode, setTournamentMode] = useState(false);
+  const [inTournament, setInTournament] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -57,7 +61,26 @@ export default function StockDetailPage({
         }
       })
       .catch(() => {});
+
+    fetch("/api/tournament/active")
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success && json.data && json.data.isRegistered) {
+          setInTournament(true);
+          if (json.data.portfolio) {
+            setTourCashBalance(json.data.portfolio.cashBalance);
+            const th = json.data.portfolio.holdings?.find(
+              (h: { symbol: string }) => h.symbol === symbol
+            );
+            if (th) setTourHeldQuantity(th.quantity);
+          }
+        }
+      })
+      .catch(() => {});
   }, [user, symbol]);
+
+  const balance = tournamentMode ? tourCashBalance : cashBalance;
+  const held = tournamentMode ? tourHeldQuantity : heldQuantity;
 
   if (loading || !symbol) {
     return (
@@ -152,6 +175,34 @@ export default function StockDetailPage({
             </div>
           )}
         </div>
+
+        {inTournament && (
+          <div className="flex items-center gap-2 rounded-xl border border-emerald-800/25 bg-emerald-900/20 p-2">
+            <span className="ml-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+              Trading in:
+            </span>
+            <button
+              onClick={() => setTournamentMode(false)}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+                !tournamentMode
+                  ? "bg-emerald-600 text-white"
+                  : "text-gray-500 hover:text-gray-300"
+              }`}
+            >
+              Regular Portfolio
+            </button>
+            <button
+              onClick={() => setTournamentMode(true)}
+              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+                tournamentMode
+                  ? "bg-amber-500 text-emerald-950"
+                  : "text-gray-500 hover:text-gray-300"
+              }`}
+            >
+              Tournament Portfolio
+            </button>
+          </div>
+        )}
 
         <div className="flex flex-wrap items-baseline gap-3">
           <span className="text-4xl font-bold text-foreground">
@@ -259,8 +310,11 @@ export default function StockDetailPage({
         symbol={symbol}
         name={stock.name}
         currentPrice={stock.currentPrice}
-        cashBalance={cashBalance}
-        heldQuantity={heldQuantity}
+        cashBalance={balance}
+        heldQuantity={held}
+        apiEndpoint={
+          tournamentMode ? "/api/tournament/trade" : undefined
+        }
       />
     </>
   );

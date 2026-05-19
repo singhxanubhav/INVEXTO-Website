@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { TrendingUp, Menu, X, LayoutDashboard, Briefcase, Gamepad2, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,16 @@ const navLinks = [
 export function Navbar() {
   const { user, loading, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [tournamentActive, setTournamentActive] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/tournament/status")
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success) setTournamentActive(json.data.isActive);
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <nav className="sticky top-0 z-50 border-b border-emerald-800/40 bg-emerald-950/95 backdrop-blur supports-[backdrop-filter]:bg-emerald-950/80">
@@ -37,7 +47,14 @@ export function Navbar() {
                   asChild
                   className="text-emerald-100/80 hover:bg-emerald-800/50 hover:text-white"
                 >
-                  <Link href={link.href}>{link.label}</Link>
+                  <Link href={link.href} className="relative">
+                    {link.label}
+                    {link.label === "Tournament" && tournamentActive && (
+                      <span className="ml-1.5 rounded bg-amber-500 px-1.5 py-0.5 text-[9px] font-bold text-white">
+                        LIVE
+                      </span>
+                    )}
+                  </Link>
                 </Button>
               ))}
             </div>
@@ -97,6 +114,11 @@ export function Navbar() {
               >
                 <link.icon className="h-4 w-4" />
                 {link.label}
+                {link.label === "Tournament" && tournamentActive && (
+                  <span className="ml-auto rounded bg-amber-500 px-1.5 py-0.5 text-[9px] font-bold text-white">
+                    LIVE
+                  </span>
+                )}
               </Link>
             ))}
             <hr className="border-emerald-800/40" />

@@ -23,6 +23,7 @@ interface BuySellModalProps {
   currentPrice: number;
   cashBalance: number;
   heldQuantity: number;
+  apiEndpoint?: string;
 }
 
 export function BuySellModal({
@@ -34,6 +35,7 @@ export function BuySellModal({
   currentPrice,
   cashBalance,
   heldQuantity,
+  apiEndpoint,
 }: BuySellModalProps) {
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -46,10 +48,16 @@ export function BuySellModal({
   const handleConfirm = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/portfolio/${mode}`, {
+      const endpoint = apiEndpoint || `/api/portfolio/${mode}`;
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ symbol, quantity }),
+        body: JSON.stringify({
+          symbol,
+          quantity,
+          type: mode,
+          stockSymbol: symbol,
+        }),
       });
       const json = await res.json();
       if (json.success) {

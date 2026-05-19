@@ -1,12 +1,13 @@
 "use client";
 
-import { useReducer, useCallback } from "react";
+import { useReducer, useCallback, useState, useEffect } from "react";
 import type { SimState, SimAction, SimStartData } from "@/src/types";
 import { initialState, calcSimPortfolioValue } from "@/src/lib/simulation";
 import { apiPost } from "@/src/lib/api";
 import EventSelector from "@/src/components/simulate/EventSelector";
 import SimDashboard from "@/src/components/simulate/SimDashboard";
 import SimResults from "@/src/components/simulate/SimResults";
+import { Gamepad2, X } from "lucide-react";
 
 function simReducer(state: SimState, action: SimAction): SimState {
   switch (action.type) {
@@ -112,15 +113,31 @@ function simReducer(state: SimState, action: SimAction): SimState {
 
 export default function SimulatePage() {
   const [state, dispatch] = useReducer(simReducer, initialState);
+  const [tournamentActive, setTournamentActive] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/tournament/active")
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success && json.data && json.data.isRegistered) {
+          setTournamentActive(true);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const showBanner = tournamentActive && !dismissed;
 
   const handleSelectEvent = useCallback(
     async (eventId: string) => {
+      if (tournamentActive) return;
       const res = await apiPost<SimStartData>(`/api/simulations/${eventId}/start`, {});
       if (res.success && res.data) {
         dispatch({ type: "START", payload: res.data });
       }
     },
-    []
+    [tournamentActive]
   );
 
   if (state.phase === "finished") {
@@ -129,6 +146,25 @@ export default function SimulatePage() {
 
   return (
     <main className="min-h-screen bg-gray-950">
+      {showBanner && (
+        <div className="bg-amber-900/30 border-b border-amber-700/30 px-4 py-3">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm text-amber-300">
+              <Gamepad2 className="h-4 w-4 shrink-0" />
+              <span>
+                Simulations are disabled during the tournament month. Focus on your
+                tournament portfolio!
+              </span>
+            </div>
+            <button
+              onClick={() => setDismissed(true)}
+              className="shrink-0 rounded-lg p-1 text-amber-400/60 hover:bg-amber-800/30 hover:text-amber-300"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
       {state.phase === "idle" ? (
         <EventSelector onSelect={handleSelectEvent} />
       ) : (
