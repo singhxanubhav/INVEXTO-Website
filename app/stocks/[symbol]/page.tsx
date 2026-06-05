@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { TrendingUp, TrendingDown, Minus, ShoppingCart } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, ShoppingCart, ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -102,7 +102,14 @@ export default function StockDetailPage({
   return (
     <>
       <Navbar />
-      <main className="mx-auto w-full max-w-7xl flex-1 space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+      <main className="relative mx-auto w-full max-w-7xl flex-1 space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+        <button
+          onClick={() => { if (window.history.length > 1) window.history.back(); else window.location.href = "/stocks"; }}
+          className="mb-4 flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </button>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">

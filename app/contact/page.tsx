@@ -1,14 +1,25 @@
-import { Mail, Phone, MessageSquare } from "lucide-react";
+"use client";
+
+import { useRouter } from "next/navigation";
+import { Mail, Phone, MessageSquare, ArrowLeft } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 
 export default function ContactPage() {
+  const router = useRouter();
   const email = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "support@invexto.in";
   const phone = process.env.NEXT_PUBLIC_CONTACT_PHONE || "+919999999999";
 
   return (
     <>
       <Navbar />
-      <main className="mx-auto max-w-3xl px-4 py-12">
+      <main className="relative mx-auto max-w-3xl px-4 py-12">
+        <button
+          onClick={() => { if (window.history.length > 1) router.back(); else router.push("/"); }}
+          className="absolute left-4 top-4 z-20 flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </button>
         <div className="mb-10 text-center">
           <h1 className="text-3xl font-bold text-white sm:text-4xl">Get in touch</h1>
           <p className="mt-2 text-gray-500">Reach out directly — we&apos;re happy to help.</p>

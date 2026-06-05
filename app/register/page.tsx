@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { TrendingUp, ArrowRight, Check, Sparkles } from "lucide-react";
+import { TrendingUp, ArrowRight, Check, Sparkles, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { RegisterForm } from "@/components/home/RegisterForm";
 import { useAuth } from "@/src/hooks/useAuth";
@@ -77,7 +77,14 @@ export default function RegisterPage() {
       </div>
 
       {/* Right Panel — Form */}
-      <div className="flex w-full items-center justify-center bg-gradient-to-br from-gray-950 via-gray-950 to-emerald-950/30 px-6 lg:w-1/2">
+      <div className="relative flex w-full items-center justify-center bg-gradient-to-br from-gray-950 via-gray-950 to-emerald-950/30 px-6 lg:w-1/2">
+        <button
+          onClick={() => router.back()}
+          className="absolute left-4 top-4 z-20 flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </button>
         <div className="w-full max-w-sm animate-fade-in">
           {/* Mobile logo */}
           <Link

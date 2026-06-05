@@ -84,7 +84,14 @@ export default function LeaderboardPage() {
   return (
     <>
       <Navbar />
-      <main className="mx-auto max-w-5xl px-4 py-8">
+      <main className="relative mx-auto max-w-5xl px-4 py-8">
+        <button
+          onClick={() => router.push("/tournament")}
+          className="mb-4 flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </button>
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-white">Leaderboard</h1>
@@ -206,15 +213,7 @@ export default function LeaderboardPage() {
           </div>
         )}
 
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => router.push("/tournament")}
-            className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 transition-colors"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Back to Tournament
-          </button>
-        </div>
+
       </main>
     </>
   );
