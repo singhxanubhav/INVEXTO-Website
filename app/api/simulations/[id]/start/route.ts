@@ -9,8 +9,46 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireSession(req);
+    const user = await requireSession(req);
     const { id } = await params;
+
+    const existing = await prisma.simulationSnapshot.findUnique({
+      where: { userId: user.id },
+    });
+    if (existing) {
+      return NextResponse.json(
+        { success: false, error: "A simulation is already in progress. End it first." },
+        { status: 400 }
+      );
+    }
+
+    const portfolio = await prisma.portfolio.findFirst({
+      where: { userId: user.id },
+      include: { holdings: { include: { stock: true } } },
+    });
+
+    if (!portfolio) {
+      return NextResponse.json(
+        { success: false, error: "Portfolio not found" },
+        { status: 404 }
+      );
+    }
+
+    if (portfolio.inTournament) {
+      return NextResponse.json(
+        { success: false, error: "Simulations are disabled during tournament mode." },
+        { status: 400 }
+      );
+    }
+
+    const snapshot = {
+      cashBalance: Number(portfolio.cashBalance),
+      holdings: portfolio.holdings.map((h) => ({
+        symbol: h.stock.symbol,
+        quantity: h.quantity,
+        avgBuyPrice: Number(h.avgBuyPrice),
+      })),
+    };
 
     const event = await prisma.simulationEvent.findUnique({
       where: { id },
@@ -21,6 +59,26 @@ export async function POST(
         { status: 404 }
       );
     }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.simulationSnapshot.create({
+        data: {
+          userId: user.id,
+          portfolioId: portfolio.id,
+          snapshot,
+          eventId: id,
+        },
+      });
+
+      await tx.holding.deleteMany({
+        where: { portfolioId: portfolio.id },
+      });
+
+      await tx.portfolio.update({
+        where: { id: portfolio.id },
+        data: { cashBalance: 100000 },
+      });
+    });
 
     const stocks = nseStocks;
     const symbols = stocks.map((s) => s.symbol);
@@ -61,6 +119,7 @@ export async function POST(
         stocks,
         priceHistory,
         startingCash: 100000,
+        snapshotCreated: true,
       },
     });
   } catch (error) {
