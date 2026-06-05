@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Trophy, Medal, ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Navbar } from "@/components/layout/Navbar";
@@ -21,6 +21,7 @@ interface ResultsData {
 }
 
 export default function TournamentResultsPage() {
+  const router = useRouter();
   const params = useParams();
   const [data, setData] = useState<ResultsData | null>(null);
   const [error, setError] = useState("");
@@ -39,7 +40,14 @@ export default function TournamentResultsPage() {
     return (
       <>
         <Navbar />
-        <main className="mx-auto max-w-3xl px-4 py-16 text-center">
+        <main className="relative mx-auto max-w-3xl px-4 py-16 text-center">
+          <button
+            onClick={() => router.back()}
+            className="absolute left-4 top-4 z-20 flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </button>
           <p className="text-gray-500">{error}</p>
           <Link href="/tournament" className="mt-4 inline-flex items-center gap-2 text-sm text-amber-400 hover:text-amber-300">
             <ArrowLeft className="h-4 w-4" /> Back to Tournament
@@ -53,7 +61,14 @@ export default function TournamentResultsPage() {
     return (
       <>
         <Navbar />
-        <main className="mx-auto max-w-3xl px-4 py-16 text-center">
+        <main className="relative mx-auto max-w-3xl px-4 py-16 text-center">
+          <button
+            onClick={() => router.back()}
+            className="absolute left-4 top-4 z-20 flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </button>
           <Loader2 className="mx-auto h-6 w-6 animate-spin text-gray-500" />
         </main>
       </>
@@ -63,13 +78,14 @@ export default function TournamentResultsPage() {
   return (
     <>
       <Navbar />
-      <main className="mx-auto max-w-4xl px-4 py-8">
-        <Link
-          href="/tournament"
-          className="mb-6 inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-300"
+      <main className="relative mx-auto max-w-4xl px-4 py-8">
+        <button
+          onClick={() => { if (window.history.length > 1) router.back(); else router.push("/tournament"); }}
+          className="absolute left-4 top-4 z-20 flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors"
         >
-          <ArrowLeft className="h-4 w-4" /> Back to Tournament
-        </Link>
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </button>
 
         <div className="mb-8 text-center">
           <Trophy className="mx-auto mb-3 h-10 w-10 text-amber-400" />

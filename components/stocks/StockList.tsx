@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { Search, RefreshCw, X } from "lucide-react";
+import { Search, RefreshCw, X, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -30,6 +30,8 @@ export function StockList({ initialStocks }: StockListProps) {
   const [searching, setSearching] = useState(false);
   const [sector, setSector] = useState("All");
   const [sort, setSort] = useState("symbol");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchResult, setIsSearchResult] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -80,6 +82,17 @@ export function StockList({ initialStocks }: StockListProps) {
     refresh();
     inputRef.current?.focus();
   };
+
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [dropdownOpen]);
 
   useEffect(() => {
     setMounted(true);
@@ -152,17 +165,34 @@ export function StockList({ initialStocks }: StockListProps) {
 
         <div className="flex items-center gap-2">
           {!isSearchResult && (
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value)}
-              className="h-9 rounded-lg border border-emerald-800/30 bg-emerald-900/30 px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-amber-400/50"
-            >
-              {sortOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+            <div ref={dropdownRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="flex h-9 items-center gap-1.5 rounded-lg border border-emerald-800/30 bg-emerald-900/30 px-3 text-sm text-foreground hover:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-400/50 transition-colors"
+              >
+                {sortOptions.find((o) => o.value === sort)?.label}
+                <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
+              </button>
+              {dropdownOpen && (
+                <div className="absolute right-0 top-full mt-1 w-44 overflow-hidden rounded-lg border border-emerald-800/30 bg-emerald-950 shadow-xl shadow-black/40 z-50">
+                  {sortOptions.map((o) => (
+                    <button
+                      key={o.value}
+                      type="button"
+                      onClick={() => { setSort(o.value); setDropdownOpen(false); }}
+                      className={`w-full px-3 py-2 text-left text-sm transition-colors ${
+                        sort === o.value
+                          ? "bg-amber-500 text-emerald-950 font-medium"
+                          : "text-gray-300 hover:bg-amber-500/20 hover:text-amber-300"
+                      }`}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
 
           <Button

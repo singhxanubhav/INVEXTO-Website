@@ -26,7 +26,7 @@ async function ensureStockRecord(symbol: string) {
 export async function POST(request: NextRequest) {
   try {
     const user = await requireSession(request);
-    const { symbol, quantity } = await request.json();
+    const { symbol, quantity, simulatedPrice } = await request.json();
 
     if (!symbol || !quantity || quantity <= 0) {
       return NextResponse.json(
@@ -35,10 +35,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const quote = await fetchQuote(symbol);
-    const currentPrice = quote?.regularMarketPrice
-      ? Number(quote.regularMarketPrice)
-      : null;
+    let currentPrice = simulatedPrice ? Number(simulatedPrice) : null;
+
+    if (!currentPrice) {
+      const quote = await fetchQuote(symbol);
+      currentPrice = quote?.regularMarketPrice
+        ? Number(quote.regularMarketPrice)
+        : null;
+    }
 
     if (!currentPrice) {
       return NextResponse.json(

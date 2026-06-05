@@ -5,6 +5,15 @@ import { TrendingUp, TrendingDown, Clock, Gauge, AlertTriangle } from "lucide-re
 import type { SimEvent } from "@/src/types";
 import { apiGet } from "@/src/lib/api";
 import { Navbar } from "@/components/layout/Navbar";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   onSelect: (eventId: string) => void;
@@ -167,39 +176,41 @@ export default function EventSelector({ onSelect }: Props) {
         </div>
       </div>
 
-      {confirmId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl border border-amber-800/40 bg-gray-900 p-8 text-center shadow-2xl animate-slide-up">
-            <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-full bg-amber-900/30">
-              <AlertTriangle className="h-7 w-7 text-amber-400" />
-            </div>
-            <h2 className="mb-2 text-xl font-bold text-white">Start Simulation?</h2>
-            <p className="mb-2 text-sm text-gray-400">
-              You&apos;ll begin with a fresh <span className="font-semibold text-emerald-400">₹1,00,000</span> virtual balance.
-            </p>
-            <p className="mb-6 text-xs text-gray-500">
-              Your real portfolio and balance will not be affected.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setConfirmId(null);
+      <Dialog open={!!confirmId} onOpenChange={(open) => { if (!open) setConfirmId(null); }}>
+        <DialogContent className="border-red-800/40 bg-gray-950 sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-400">
+              <AlertTriangle className="h-5 w-5" />
+              Your portfolio will be temporarily wiped
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Starting this simulation will clear your current holdings and give you
+              ₹1,00,000 to trade. When you end the simulation, your original portfolio
+              will be fully restored. Do not close the browser mid-simulation.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmId(null)}
+              className="border-gray-700 text-gray-400"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (confirmId) {
                   onSelect(confirmId);
-                }}
-                className="flex-1 rounded-xl bg-emerald-600 py-3 font-semibold text-white transition hover:bg-emerald-500 hover:shadow-lg hover:shadow-emerald-900/30"
-              >
-                Start
-              </button>
-              <button
-                onClick={() => setConfirmId(null)}
-                className="flex-1 rounded-xl border border-gray-700 py-3 font-semibold text-gray-300 transition hover:bg-gray-800"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+                  setConfirmId(null);
+                }
+              }}
+              className="bg-emerald-600 text-white hover:bg-emerald-500"
+            >
+              Start Simulation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

@@ -3,7 +3,7 @@
 import { useReducer, useCallback, useState, useEffect } from "react";
 import type { SimState, SimAction, SimStartData } from "@/src/types";
 import { initialState, calcSimPortfolioValue } from "@/src/lib/simulation";
-import { apiPost } from "@/src/lib/api";
+import { apiPost, apiGet } from "@/src/lib/api";
 import EventSelector from "@/src/components/simulate/EventSelector";
 import SimDashboard from "@/src/components/simulate/SimDashboard";
 import SimResults from "@/src/components/simulate/SimResults";
@@ -31,9 +31,6 @@ function simReducer(state: SimState, action: SimAction): SimState {
     }
     case "TICK": {
       if (state.phase !== "running") return state;
-      if (state.day + 1 >= state.totalDays) {
-        return { ...state, phase: "finished" };
-      }
       const nextDay = state.day + 1;
       const nextState = { ...state, day: nextDay };
       nextState.valueHistory = [...state.valueHistory, calcSimPortfolioValue(nextState)];
@@ -115,6 +112,7 @@ export default function SimulatePage() {
   const [state, dispatch] = useReducer(simReducer, initialState);
   const [tournamentActive, setTournamentActive] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const [activeSim, setActiveSim] = useState<{ eventId: string; startedAt: string } | null>(null);
 
   useEffect(() => {
     fetch("/api/tournament/active")
@@ -122,6 +120,16 @@ export default function SimulatePage() {
       .then((json) => {
         if (json.success && json.data && json.data.isRegistered) {
           setTournamentActive(true);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    apiGet<{ hasActiveSimulation: boolean; eventId?: string; startedAt?: string }>("/api/simulations/active")
+      .then((res) => {
+        if (res.success && res.data?.hasActiveSimulation) {
+          setActiveSim({ eventId: res.data.eventId!, startedAt: res.data.startedAt! });
         }
       })
       .catch(() => {});
@@ -135,6 +143,10 @@ export default function SimulatePage() {
       const res = await apiPost<SimStartData>(`/api/simulations/${eventId}/start`, {});
       if (res.success && res.data) {
         dispatch({ type: "START", payload: res.data });
+      } else {
+        if (res.error?.includes("already in progress")) {
+          setActiveSim({ eventId, startedAt: new Date().toISOString() });
+        }
       }
     },
     [tournamentActive]
@@ -162,6 +174,46 @@ export default function SimulatePage() {
             >
               <X className="h-4 w-4" />
             </button>
+          </div>
+        </div>
+      )}
+      {activeSim && state.phase === "idle" && (
+        <div className="bg-red-900/30 border-b border-red-700/30 px-4 py-3">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm text-red-300">
+              <Gamepad2 className="h-4 w-4 shrink-0" />
+              <span>
+                You have a simulation in progress. Resume or end it to start a new one.
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={async () => {
+                  const endRes = await apiPost(`/api/simulations/${activeSim.eventId}/end`, {});
+                  if (endRes.success) {
+                    setActiveSim(null);
+                    const startRes = await apiPost<SimStartData>(`/api/simulations/${activeSim.eventId}/start`, {});
+                    if (startRes.success && startRes.data) {
+                      dispatch({ type: "START", payload: startRes.data });
+                    }
+                  }
+                }}
+                className="rounded-lg bg-emerald-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500"
+              >
+                Resume Simulation
+              </button>
+              <button
+                onClick={async () => {
+                  const res = await apiPost(`/api/simulations/${activeSim.eventId}/end`, {});
+                  if (res.success) {
+                    setActiveSim(null);
+                  }
+                }}
+                className="rounded-lg border border-red-700/50 px-4 py-1.5 text-xs font-semibold text-red-300 hover:bg-red-800/30"
+              >
+                End & Restore Portfolio
+              </button>
+            </div>
           </div>
         </div>
       )}

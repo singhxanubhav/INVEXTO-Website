@@ -39,23 +39,20 @@ export function Navbar() {
 
         {!loading && user ? (
           <>
-            <div className="hidden items-center gap-1 md:flex">
+            <div className="hidden items-center md:flex">
               {navLinks.map((link) => (
-                <Button
+                <Link
                   key={link.href}
-                  variant="ghost"
-                  asChild
-                  className="text-emerald-100/80 hover:bg-emerald-800/50 hover:text-white"
+                  href={link.href}
+                  className="relative flex h-9 w-24 items-center justify-center rounded-lg text-sm font-medium text-emerald-100/80 transition-colors hover:bg-emerald-800/50 hover:text-white"
                 >
-                  <Link href={link.href} className="relative">
-                    {link.label}
-                    {link.label === "Tournament" && tournamentActive && (
-                      <span className="ml-1.5 rounded bg-amber-500 px-1.5 py-0.5 text-[9px] font-bold text-white">
-                        LIVE
-                      </span>
-                    )}
-                  </Link>
-                </Button>
+                  {link.label}
+                  {link.label === "Tournament" && tournamentActive && (
+                    <span className="absolute -right-0.5 -top-0.5 inline-flex items-center rounded bg-amber-500 px-1 py-0.5 text-[9px] font-bold leading-none text-white">
+                      LIVE
+                    </span>
+                  )}
+                </Link>
               ))}
             </div>
 

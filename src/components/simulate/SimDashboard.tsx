@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import type { SimState, SimAction } from "@/src/types";
 import {
   getCurrentPrices,
@@ -15,6 +16,15 @@ import {
   Search, X, Plus, Minus, Wallet, BarChart3,
   Timer, Gauge, Info,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   state: SimState;
@@ -30,6 +40,10 @@ export default function SimDashboard({ state, dispatch }: Props) {
   const [qty, setQty] = useState(1);
   const [activeTab, setActiveTab] = useState<"holdings" | "trades">("holdings");
   const feedRef = useRef<HTMLDivElement>(null);
+  const [ending, setEnding] = useState(false);
+  const [showResult, setShowResult] = useState(false);
+  const [resultData, setResultData] = useState<{ finalValue: number; gainLoss: number } | null>(null);
+  const endingRef = useRef(false);
 
   const prices = useMemo(() => getCurrentPrices(state), [state]);
   const portfolioValue = useMemo(() => calcSimPortfolioValue(state), [state]);
@@ -61,19 +75,60 @@ export default function SimDashboard({ state, dispatch }: Props) {
   const startValue = state.valueHistory[0] ?? STARTING_CASH;
   const returnPct = startValue > 0 ? ((latestValue - startValue) / startValue) * 100 : 0;
 
+  const handleEndSimulation = useCallback(async () => {
+    if (endingRef.current) return;
+    endingRef.current = true;
+    setEnding(true);
+
+    try {
+      const finalValue = calcSimPortfolioValue(state);
+      const simGainLoss = finalValue - STARTING_CASH;
+
+      await fetch(`/api/simulations/${state.eventId}/end`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      setResultData({ finalValue, gainLoss: simGainLoss });
+      setShowResult(true);
+    } catch {
+      toast.error("Failed to end simulation");
+    } finally {
+      setEnding(false);
+    }
+  }, [state]);
+
+  useEffect(() => {
+    if (state.day >= state.totalDays - 1 && state.phase === "running" && state.totalDays > 0) {
+      handleEndSimulation();
+    }
+  }, [state.day, state.totalDays, state.phase, handleEndSimulation]);
+
   useEffect(() => {
     if (state.phase !== "running") return;
+    if (state.day >= state.totalDays - 1) return;
     const interval = setInterval(() => {
       dispatch({ type: "TICK" });
     }, Math.round(1000 / speed));
     return () => clearInterval(interval);
-  }, [state.phase, speed, dispatch]);
+  }, [state.phase, speed, dispatch, state.day, state.totalDays]);
 
   useEffect(() => {
     if (feedRef.current) {
       feedRef.current.scrollTop = feedRef.current.scrollHeight;
     }
   }, [state.transactions.length]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (state.phase === "running" || state.phase === "paused") {
+        e.preventDefault();
+        e.returnValue = "Simulation is in progress. Your portfolio will be restored when you end the simulation properly.";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [state.phase]);
 
   const filteredStocks = useMemo(() => {
     if (!search) return state.stocks;
@@ -108,25 +163,41 @@ export default function SimDashboard({ state, dispatch }: Props) {
     []
   );
 
-  const executeOrder = useCallback(() => {
+  const executeOrder = useCallback(async () => {
     if (!orderSymbol) return;
     const price = prices[orderSymbol];
     if (!price) return;
-    dispatch({
-      type: orderMode === "buy" ? "BUY" : "SELL",
-      payload: { symbol: orderSymbol, qty, price },
-    });
+
+    try {
+      const res = await fetch(`/api/portfolio/${orderMode}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          symbol: orderSymbol,
+          quantity: qty,
+          simulatedPrice: price,
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        dispatch({
+          type: orderMode === "buy" ? "BUY" : "SELL",
+          payload: { symbol: orderSymbol, qty, price },
+        });
+        const label = orderMode === "buy" ? "Bought" : "Sold";
+        toast.success(`${label} ${qty} ${orderSymbol.replace(".NS", "")}`);
+      } else {
+        toast.error(json.error || "Transaction failed");
+      }
+    } catch {
+      toast.error("Network error");
+    }
     setOrderSymbol(null);
     setQty(1);
   }, [orderSymbol, orderMode, qty, prices, dispatch]);
 
   const holdingsValue = portfolioValue - state.cashBalance;
   const holdingCount = Object.keys(state.holdings).length;
-
-  const high52w = latestValue * 1.15;
-  const low52w = latestValue * 0.85;
-  const fromHigh = ((latestValue - high52w) / high52w) * 100;
-  const fromLow = ((latestValue - low52w) / low52w) * 100;
 
   const tradeStats = useMemo(() => {
     const buys = state.transactions.filter((t) => t.type === "buy");
@@ -184,11 +255,12 @@ export default function SimDashboard({ state, dispatch }: Props) {
                 </button>
               )}
               <button
-                onClick={() => dispatch({ type: "END" })}
-                className="rounded-xl border border-red-800/40 px-3 py-2 text-xs font-semibold text-red-400 transition hover:bg-red-950/30"
+                onClick={handleEndSimulation}
+                disabled={ending}
+                className="rounded-xl border border-red-800/40 px-3 py-2 text-xs font-semibold text-red-400 transition hover:bg-red-950/30 disabled:opacity-50"
               >
                 <Square className="mr-1 inline-block h-3.5 w-3.5" />
-                End
+                {ending ? "Ending..." : "End"}
               </button>
             </div>
           </div>
@@ -706,6 +778,53 @@ export default function SimDashboard({ state, dispatch }: Props) {
           </div>
         </div>
       )}
+
+      {/* ===== RESULT MODAL ===== */}
+      <Dialog open={showResult} onOpenChange={(open) => {
+        if (!open) {
+          router.push("/portfolio");
+        }
+      }}>
+        <DialogContent className="border-emerald-800/40 bg-gray-950 sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-center text-white">
+              Simulation Complete
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              {resultData && (
+                <div className="mt-4 space-y-3">
+                  <div>
+                    <p className="text-xs text-gray-500">Final Portfolio Value</p>
+                    <p className="text-3xl font-bold text-white">
+                      {formatINR(resultData.finalValue)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Gain / Loss</p>
+                    <p className={`text-xl font-bold ${
+                      resultData.gainLoss >= 0 ? "text-emerald-400" : "text-red-400"
+                    }`}>
+                      {resultData.gainLoss >= 0 ? "+" : ""}{formatINR(resultData.gainLoss)}
+                      <span className="text-sm ml-1">
+                        ({resultData.gainLoss >= 0 ? "+" : ""}
+                        {formatPercent((resultData.gainLoss / STARTING_CASH) * 100)})
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              onClick={() => router.push("/portfolio")}
+              className="w-full bg-emerald-600 text-white hover:bg-emerald-500"
+            >
+              View Restored Portfolio
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
