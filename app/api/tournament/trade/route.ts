@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     }
 
     const portfolio = await prisma.portfolio.findFirst({
-      where: { userId: user.id, mode: "tournament", tournamentId: tournament.id },
+      where: { userId: user.id, inTournament: true, tournamentId: tournament.id },
     });
 
     if (!portfolio) {

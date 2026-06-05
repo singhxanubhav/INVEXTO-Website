@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     const user = await requireSession(request);
 
     const portfolio = await prisma.portfolio.findFirst({
-      where: { userId: user.id, mode: "regular" },
+      where: { userId: user.id },
       include: {
         holdings: {
           include: {
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
 
     if (!portfolio) {
       const newPortfolio = await prisma.portfolio.create({
-        data: { userId: user.id, mode: "regular", cashBalance: 100000 },
+        data: { userId: user.id, cashBalance: 100000 },
       });
       return NextResponse.json({
         success: true,
@@ -40,6 +40,8 @@ export async function GET(request: NextRequest) {
           unrealizedGain: 0,
           todayGain: 0,
           realizedGainTillDate: 0,
+          inTournament: false,
+          tournamentId: null,
         },
       });
     }
@@ -104,6 +106,8 @@ export async function GET(request: NextRequest) {
         unrealizedGain,
         todayGain,
         realizedGainTillDate,
+        inTournament: portfolio.inTournament,
+        tournamentId: portfolio.tournamentId,
       },
     });
   } catch (error) {

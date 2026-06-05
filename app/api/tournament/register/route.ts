@@ -41,25 +41,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const registration = await prisma.$transaction(async (tx) => {
-      const reg = await tx.tournamentRegistration.create({
+    await prisma.$transaction(async (tx) => {
+      const portfolio = await tx.portfolio.findFirst({
+        where: { userId: user.id },
+      });
+
+      if (portfolio) {
+        await tx.holding.deleteMany({
+          where: { portfolioId: portfolio.id },
+        });
+
+        await tx.portfolio.update({
+          where: { id: portfolio.id },
+          data: {
+            cashBalance: 100000,
+            inTournament: true,
+            tournamentId: tournament.id,
+          },
+        });
+      }
+
+      await tx.tournamentRegistration.create({
         data: {
           tournamentId: tournament.id,
           userId: user.id,
           phone,
         },
       });
-
-      await tx.portfolio.create({
-        data: {
-          userId: user.id,
-          mode: "tournament",
-          tournamentId: tournament.id,
-          cashBalance: 100000,
-        },
-      });
-
-      return reg;
     });
 
     return NextResponse.json({
@@ -71,11 +79,7 @@ export async function POST(req: NextRequest) {
           endDate: tournament.endDate,
           prizePool: tournament.prizePool,
         },
-        registration: {
-          id: registration.id,
-          phone: registration.phone,
-        },
-        message: "Successfully registered!",
+        message: "Portfolio reset. Tournament started! You have ₹1,00,000 to invest.",
       },
     });
   } catch (error) {

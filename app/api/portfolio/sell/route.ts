@@ -4,6 +4,7 @@ import { prisma } from "@/src/lib/prisma";
 import { requireSession } from "@/src/lib/session";
 import { fetchQuote } from "@/src/lib/yahoo-finance";
 import { getStockBySymbol } from "@/src/data/nse-stocks";
+import { SimpleCache } from "@/src/lib/simple-cache";
 
 async function ensureStockRecord(symbol: string) {
   const existing = await prisma.stock.findUnique({ where: { symbol } });
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
     const stockRecord = await ensureStockRecord(symbol);
 
     const portfolio = await prisma.portfolio.findFirst({
-      where: { userId: user.id, mode: "regular" },
+      where: { userId: user.id },
     });
 
     if (!portfolio) {
@@ -110,6 +111,10 @@ export async function POST(request: NextRequest) {
 
       return txn;
     });
+
+    if (portfolio.inTournament) {
+      SimpleCache.del("tournament:leaderboard");
+    }
 
     return NextResponse.json({
       success: true,

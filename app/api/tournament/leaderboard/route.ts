@@ -31,7 +31,7 @@ export async function GET() {
     const entries = await Promise.all(
       registrations.map(async (reg) => {
         const portfolio = await prisma.portfolio.findFirst({
-          where: { userId: reg.userId, mode: "tournament", tournamentId: tournament.id },
+          where: { userId: reg.userId, inTournament: true, tournamentId: tournament.id },
           include: { holdings: { include: { stock: true } } },
         });
 

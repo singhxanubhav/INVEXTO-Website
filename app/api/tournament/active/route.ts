@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
 
     if (registration) {
       const dbPortfolio = await prisma.portfolio.findFirst({
-        where: { userId: user.id, mode: "tournament", tournamentId: tournament.id },
+        where: { userId: user.id, inTournament: true, tournamentId: tournament.id },
         include: { holdings: { include: { stock: true } } },
       });
 

@@ -48,7 +48,6 @@ export async function POST(request: Request) {
     await prisma.portfolio.create({
       data: {
         userId: dbUser.id,
-        mode: "regular",
         cashBalance: 100000,
       },
     });

@@ -13,10 +13,7 @@ enum PriceType {
   simulated
 }
 
-enum PortfolioMode {
-  regular
-  tournament
-}
+
 
 enum TournamentStatus {
   upcoming
@@ -68,15 +65,15 @@ model StockPrice {
 }
 
 model Portfolio {
-  id           String        @id @default(uuid()) @db.Uuid
-  userId       String        @db.Uuid
-  mode         PortfolioMode
-  tournamentId String?       @db.Uuid
-  cashBalance  Decimal       @default(100000) @db.Decimal(14, 2)
-  createdAt    DateTime      @default(now())
+  id           String      @id @default(uuid()) @db.Uuid
+  userId       String      @db.Uuid
+  inTournament Boolean     @default(false)
+  tournamentId String?     @db.Uuid
+  cashBalance  Decimal     @default(100000) @db.Decimal(14, 2)
+  createdAt    DateTime    @default(now())
 
-  user         User          @relation(fields: [userId], references: [id])
-  tournament   Tournament?   @relation(fields: [tournamentId], references: [id])
+  user         User        @relation(fields: [userId], references: [id])
+  tournament   Tournament? @relation(fields: [tournamentId], references: [id])
   holdings     Holding[]
   transactions Transaction[]
 }

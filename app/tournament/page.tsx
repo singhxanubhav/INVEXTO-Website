@@ -63,7 +63,7 @@ async function getData(userId: string) {
 
   if (registration) {
     const dbPortfolio = await prisma.portfolio.findFirst({
-      where: { userId, mode: "tournament", tournamentId: tournament.id },
+      where: { userId, inTournament: true, tournamentId: tournament.id },
     });
     if (dbPortfolio) {
       portfolio = { cashBalance: Number(dbPortfolio.cashBalance) };

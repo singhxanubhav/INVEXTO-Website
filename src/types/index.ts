@@ -61,7 +61,7 @@ export interface StockPrice {
 export interface Portfolio {
   id: string;
   userId: string;
-  mode: "regular" | "tournament";
+  inTournament: boolean;
   tournamentId: string | null;
   cashBalance: number;
   createdAt: string;

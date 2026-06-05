@@ -50,6 +50,27 @@ async function createNewTournament() {
   console.log(`[Cron] New tournament created for ${getMonthName(now)}`);
 }
 
+async function resetPortfolioAfterTournament(tournamentId: string) {
+  const portfolios = await prisma.portfolio.findMany({
+    where: { tournamentId, inTournament: true },
+  });
+
+  for (const portfolio of portfolios) {
+    await prisma.holding.deleteMany({
+      where: { portfolioId: portfolio.id },
+    });
+
+    await prisma.portfolio.update({
+      where: { id: portfolio.id },
+      data: {
+        cashBalance: 100000,
+        inTournament: false,
+        tournamentId: null,
+      },
+    });
+  }
+}
+
 async function closeTournamentAndComputeWinners(tournamentId: string) {
   const registrations = await prisma.tournamentRegistration.findMany({
     where: { tournamentId },
@@ -58,6 +79,7 @@ async function closeTournamentAndComputeWinners(tournamentId: string) {
 
   if (registrations.length === 0) {
     console.log("[Cron] No registrations for tournament, skipping");
+    await resetPortfolioAfterTournament(tournamentId);
     return;
   }
 
@@ -65,7 +87,7 @@ async function closeTournamentAndComputeWinners(tournamentId: string) {
 
   for (const reg of registrations) {
     const portfolio = await prisma.portfolio.findFirst({
-      where: { userId: reg.userId, mode: "tournament", tournamentId },
+      where: { userId: reg.userId, inTournament: true, tournamentId },
       include: { holdings: { include: { stock: true } } },
     });
 
@@ -122,6 +144,8 @@ async function closeTournamentAndComputeWinners(tournamentId: string) {
     where: { id: tournamentId },
     data: { status: "completed" },
   });
+
+  await resetPortfolioAfterTournament(tournamentId);
 
   console.log(`[Cron] Tournament ${tournamentId} closed. Winners:`);
   for (let i = 0; i < Math.min(5, results.length); i++) {
