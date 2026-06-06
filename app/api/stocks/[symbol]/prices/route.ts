@@ -13,9 +13,9 @@ export async function GET(
     const validRanges = ["1d", "5d", "1m", "1y"] as const;
     const r = validRanges.includes(range as any) ? (range as "1d" | "5d" | "1m" | "1y") : "1d";
 
-    const data = await fetchHistoricalPrices(symbol, r);
+    const { prices, isWeekend, chartDate } = await fetchHistoricalPrices(symbol, r);
 
-    return NextResponse.json({ success: true, data });
+    return NextResponse.json({ success: true, data: prices, isWeekend, chartDate });
   } catch (error) {
     console.error("Stock prices API error:", error);
     return NextResponse.json(

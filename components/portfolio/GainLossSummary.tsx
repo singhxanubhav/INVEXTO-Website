@@ -78,7 +78,7 @@ export function GainLossSummary({ holdings, loading }: GainLossSummaryProps) {
                   borderRadius: "0.5rem",
                   fontSize: "0.8rem",
                 }}
-                formatter={(value) => `₹${Number(value).toLocaleString()}`}
+                formatter={(value) => `₹${Number(value).toLocaleString("en-IN")}`}
               />
             </PieChart>
           </ResponsiveContainer>

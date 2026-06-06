@@ -25,13 +25,19 @@ export function StockChart({
   const [range, setRange] = useState("1d");
   const [data, setData] = useState<PricePoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isWeekend, setIsWeekend] = useState(false);
+  const [chartDate, setChartDate] = useState("");
 
   useEffect(() => {
     setLoading(true);
     fetch(`/api/stocks/${encodeURIComponent(symbol)}/prices?range=${range}`)
       .then((r) => r.json())
       .then((json) => {
-        if (json.success) setData(json.data || []);
+        if (json.success) {
+          setData(json.data || []);
+          setIsWeekend(json.isWeekend || false);
+          setChartDate(json.chartDate || "");
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -83,6 +89,12 @@ export function StockChart({
 
       {loading ? (
         <Skeleton className="h-72 w-full bg-emerald-800/30" />
+      ) : data.length === 0 ? (
+        <div className="flex h-72 items-center justify-center">
+          <p className="text-sm text-muted-foreground">
+            No chart data available for this period
+          </p>
+        </div>
       ) : (
         <div className="h-72 w-full">
           <ResponsiveContainer width="100%" height="100%">
@@ -133,6 +145,11 @@ export function StockChart({
             </LineChart>
           </ResponsiveContainer>
         </div>
+      )}
+      {isWeekend && range === "1d" && (
+        <p className="mt-2 text-center text-[11px] text-muted-foreground/60">
+          Showing {chartDate ? new Date(chartDate).toLocaleDateString("en-IN", { weekday: "long", month: "short", day: "numeric" }) : "latest"}&apos;s data — market is closed on weekends
+        </p>
       )}
     </div>
   );

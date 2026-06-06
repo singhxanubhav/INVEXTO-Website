@@ -7,7 +7,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatINR, formatPercent, formatCompact } from "@/lib/format";
+import { formatINR, formatPercent, formatMarketCap, formatVolume } from "@/lib/format";
 import type { KeyStats } from "@/src/types";
 
 interface StatItem {
@@ -96,7 +96,7 @@ export function KeyStatisticsView({
     },
     {
       label: "Market Cap",
-      value: formatCompact(marketCap),
+      value: formatMarketCap(marketCap),
       tooltip: "Total market value = current price × outstanding shares",
     },
     {
@@ -111,7 +111,7 @@ export function KeyStatisticsView({
     },
     {
       label: "20D Avg Volume",
-      value: stats.avgVolume20d.toLocaleString(),
+      value: formatVolume(stats.avgVolume20d),
       tooltip: "Average daily trading volume over the last 20 sessions",
     },
     {

@@ -5,7 +5,7 @@ import { TrendingUp, TrendingDown, Minus, Flame } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { StockWithPrice } from "@/src/types";
-import { formatINR, formatPercent, formatCompact } from "@/lib/format";
+import { formatINR, formatPercent, formatMarketCap, formatVolume } from "@/lib/format";
 
 const sectorColors: Record<string, string> = {
   IT: "bg-blue-500/10 text-blue-400 border-blue-500/30",
@@ -91,8 +91,8 @@ export function StockCard({ stock, isHot = false }: { stock: StockWithPrice; isH
       </div>
 
       <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-        <span>MCap {formatCompact(stock.marketCap)}</span>
-        <span>Vol {stock.volume.toLocaleString()}</span>
+        <span>MCap {formatMarketCap(stock.marketCap)}</span>
+        <span>Vol {formatVolume(stock.volume)}</span>
       </div>
     </Link>
   );

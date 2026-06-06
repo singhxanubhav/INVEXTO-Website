@@ -8,9 +8,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Navbar } from "@/components/layout/Navbar";
 import { StockChart } from "@/components/stocks/StockChart";
 import { KeyStatisticsView } from "@/components/stocks/KeyStatistics";
+import { StockNews } from "@/components/stocks/StockNews";
 import { BuySellModal } from "@/components/stocks/BuySellModal";
 import { useAuth } from "@/src/hooks/useAuth";
-import { formatINR, formatPercent, formatCompact } from "@/lib/format";
+import { formatINR, formatPercent, formatMarketCap, formatVolume } from "@/lib/format";
 import type { StockDetail } from "@/src/types";
 
 export default function StockDetailPage({
@@ -202,13 +203,13 @@ export default function StockDetailPage({
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Market Cap</span>
                   <span className="font-medium text-foreground">
-                    {formatCompact(stock.marketCap)}
+                    {formatMarketCap(stock.marketCap)}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Volume</span>
                   <span className="font-medium text-foreground">
-                    {stock.volume.toLocaleString()}
+                    {formatVolume(stock.volume)}
                   </span>
                 </div>
               </div>
@@ -258,6 +259,10 @@ export default function StockDetailPage({
             stats={stock.keyStats}
             marketCap={stock.marketCap}
           />
+        </div>
+
+        <div className="rounded-xl border border-emerald-800/30 bg-emerald-900/20 p-4">
+          <StockNews symbol={symbol} />
         </div>
       </main>
 
