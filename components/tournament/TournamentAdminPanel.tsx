@@ -4,10 +4,15 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Shield, Loader2 } from "lucide-react";
+import { useAuth } from "@/src/hooks/useAuth";
 
 export function TournamentAdminPanel() {
+  const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState<string | null>(null);
   const router = useRouter();
+
+  if (authLoading) return null;
+  if (!user?.isAdmin) return null;
 
   const handleClose = async () => {
     setLoading("close");

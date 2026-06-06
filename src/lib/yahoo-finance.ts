@@ -249,23 +249,41 @@ export async function getStockNews(symbol: string): Promise<StockNewsItem[]> {
   const cached = newsCache.get(cacheKey);
   if (cached) return cached as StockNewsItem[];
 
+  const baseSymbol = symbol.replace(".NS", "");
+  const stockInfo = getStockBySymbol(symbol);
+  const query = stockInfo
+    ? `${stockInfo.name} ${baseSymbol} NSE share`
+    : `${baseSymbol} NSE stock`;
+
   try {
-    const result = await yahooFinance.search(symbol, {
-      newsCount: 5,
-      quotesCount: 0,
-    }, { validateResult: false }) as any;
+    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-IN&gl=IN&ceid=IN:en`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
+    });
+    const xml = await res.text();
 
-    if (!result?.news?.length) return [];
+    const items: StockNewsItem[] = [];
+    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+    let match;
 
-    const items = result.news.slice(0, 5).map((item: any) => ({
-      title: item.title ?? "Untitled",
-      publisher: item.publisher ?? "Unknown",
-      link: item.link ?? "#",
-      publishedAt: item.providerPublishTime
-        ? new Date(item.providerPublishTime).getTime()
-        : Date.now(),
-      thumbnail: item.thumbnail?.resolutions?.[0]?.url ?? undefined,
-    }));
+    while ((match = itemRegex.exec(xml)) !== null) {
+      if (items.length >= 5) break;
+      const c = match[1];
+      const titleRaw = c.match(/<title>(.*?)<\/title>/)?.[1]?.trim();
+      if (!titleRaw) continue;
+      const title = titleRaw.replace(/^<!\[CDATA\[|\]\]>$/g, "");
+      const link = c.match(/<link>([^<]*)<\/link>/)?.[1] ?? "";
+      const pubDate = c.match(/<pubDate>([^<]*)<\/pubDate>/)?.[1] ?? "";
+      const source = c.match(/<source[^>]*>([^<]*)<\/source>/)?.[1] ?? "Google News";
+
+      items.push({
+        title,
+        publisher: source,
+        link,
+        publishedAt: pubDate ? new Date(pubDate).getTime() : Date.now(),
+        thumbnail: undefined,
+      });
+    }
 
     newsCache.set(cacheKey, items, NEWS_TTL);
     return items;

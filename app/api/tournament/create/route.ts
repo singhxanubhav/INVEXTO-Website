@@ -1,8 +1,18 @@
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { prisma } from "@/src/lib/prisma";
+import { requireSession } from "@/src/lib/session";
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
+    const user = await requireSession(request);
+    if (!(user as any).isAdmin) {
+      return NextResponse.json(
+        { success: false, error: "Forbidden" },
+        { status: 403 }
+      );
+    }
+
     const existing = await prisma.tournament.findFirst({
       where: { status: "active" },
     });
@@ -28,6 +38,7 @@ export async function POST() {
 
     return NextResponse.json({ success: true, data: tournament });
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error("Create tournament error:", error);
     return NextResponse.json(
       { success: false, error: "Internal server error" },
