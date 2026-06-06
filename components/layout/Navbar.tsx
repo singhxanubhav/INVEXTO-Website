@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { TrendingUp, Menu, X, LayoutDashboard, Briefcase, Gamepad2, Trophy } from "lucide-react";
+import { TrendingUp, Menu, X, LayoutDashboard, Briefcase, Gamepad2, Trophy, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/src/hooks/useAuth";
 
 const navLinks = [
   { href: "/stocks", label: "Stocks", icon: LayoutDashboard },
+  { href: "/dictionary", label: "Dictionary", icon: BookOpen },
   { href: "/portfolio", label: "Portfolio", icon: Briefcase },
   { href: "/simulate", label: "Simulate", icon: Gamepad2 },
   { href: "/tournament", label: "Tournament", icon: Trophy },
