@@ -5,6 +5,8 @@ import { requireSession } from "@/src/lib/session";
 import { fetchQuotes } from "@/src/lib/yahoo-finance";
 import { getStockBySymbol } from "@/src/data/nse-stocks";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const user = await requireSession(request);
@@ -12,12 +14,16 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const mode = searchParams.get("mode") || "normal";
 
-    const where: { userId: string; inTournament?: boolean; tournamentId?: { not: null } | null } = { userId: user.id };
+    let where: any = { userId: user.id };
+
     if (mode === "normal") {
       where.inTournament = false;
     } else if (mode === "tournament") {
+      const activeTournament = await prisma.tournament.findFirst({
+        where: { status: "active" }
+      });
       where.inTournament = true;
-      where.tournamentId = { not: null };
+      where.tournamentId = activeTournament ? activeTournament.id : { not: null };
     }
 
     let portfolio = await prisma.portfolio.findFirst({

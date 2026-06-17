@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { TrendingUp, TrendingDown, Minus, ShoppingCart, ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,10 +24,22 @@ export default function StockDetailPage({
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"buy" | "sell">("buy");
-  const [cashBalance, setCashBalance] = useState(0);
-  const [heldQuantity, setHeldQuantity] = useState(0);
+  const [normalCash, setNormalCash] = useState(0);
+  const [normalQty, setNormalQty] = useState(0);
   const [inTournament, setInTournament] = useState(false);
+  const [tournamentCash, setTournamentCash] = useState(0);
+  const [tournamentQty, setTournamentQty] = useState(0);
+  const [tradeTarget, setTradeTarget] = useState<"normal" | "tournament">("normal");
+  const [refreshKey, setRefreshKey] = useState(0);
   const { user } = useAuth();
+  const prevModalOpen = useRef(false);
+
+  useEffect(() => {
+    if (prevModalOpen.current && !modalOpen) {
+      setRefreshKey((k) => k + 1);
+    }
+    prevModalOpen.current = modalOpen;
+  }, [modalOpen]);
 
   useEffect(() => {
     params.then((p) => setSymbol(p.symbol));
@@ -47,20 +59,31 @@ export default function StockDetailPage({
 
   useEffect(() => {
     if (!user || !symbol) return;
-    fetch("/api/portfolio")
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.success && json.data) {
-          setCashBalance(json.data.cashBalance);
-          setInTournament(json.data.inTournament);
-          const holding = json.data.holdings.find(
-            (h: { symbol: string }) => h.symbol === symbol
-          );
-          if (holding) setHeldQuantity(holding.quantity);
-        }
-      })
-      .catch(() => {});
-  }, [user, symbol]);
+    
+    Promise.all([
+      fetch(`/api/portfolio?mode=normal&t=${Date.now()}`).then(r => r.json()),
+      fetch(`/api/tournament/active?t=${Date.now()}`).then(r => r.json()),
+    ]).then(([normalData, tourneyActiveData]) => {
+      if (normalData.success && normalData.data) {
+        setNormalCash(normalData.data.cashBalance);
+        const holding = normalData.data.holdings.find((h: { symbol: string }) => h.symbol === symbol);
+        if (holding) setNormalQty(holding.quantity);
+        else setNormalQty(0);
+      }
+
+      if (tourneyActiveData.success && tourneyActiveData.data?.isRegistered) {
+        setInTournament(true);
+        fetch(`/api/portfolio?mode=tournament&t=${Date.now()}`).then(r => r.json()).then(tjson => {
+          if (tjson.success && tjson.data) {
+            setTournamentCash(tjson.data.cashBalance);
+            const holding = tjson.data.holdings.find((h: { symbol: string }) => h.symbol === symbol);
+            if (holding) setTournamentQty(holding.quantity);
+            else setTournamentQty(0);
+          }
+        }).catch(() => {});
+      }
+    }).catch(() => {});
+  }, [user, symbol, refreshKey]);
 
   if (loading || !symbol) {
     return (
@@ -141,6 +164,7 @@ export default function StockDetailPage({
             <div className="flex items-center gap-2">
               <Button
                 onClick={() => {
+                  setTradeTarget("normal");
                   setModalMode("buy");
                   setModalOpen(true);
                 }}
@@ -151,6 +175,7 @@ export default function StockDetailPage({
               </Button>
               <Button
                 onClick={() => {
+                  setTradeTarget("normal");
                   setModalMode("sell");
                   setModalOpen(true);
                 }}
@@ -223,6 +248,7 @@ export default function StockDetailPage({
               <div className="flex flex-col gap-2">
                 <Button
                   onClick={() => {
+                    setTradeTarget("normal");
                     setModalMode("buy");
                     setModalOpen(true);
                   }}
@@ -234,6 +260,7 @@ export default function StockDetailPage({
                 </Button>
                 <Button
                   onClick={() => {
+                    setTradeTarget("normal");
                     setModalMode("sell");
                     setModalOpen(true);
                   }}
@@ -243,6 +270,37 @@ export default function StockDetailPage({
                 >
                   Sell {symbol.replace(".NS", "")}
                 </Button>
+                
+                {inTournament && (
+                  <>
+                    <div className="my-2 border-t border-emerald-800/30" />
+                    <Button
+                      onClick={() => {
+                        setTradeTarget("tournament");
+                        setModalMode("buy");
+                        setModalOpen(true);
+                      }}
+                      className="w-full bg-amber-500 text-emerald-950 hover:bg-amber-400"
+                      disabled={!user}
+                    >
+                      <ShoppingCart className="mr-1.5 h-4 w-4" />
+                      Buy for Tournament
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setTradeTarget("tournament");
+                        setModalMode("sell");
+                        setModalOpen(true);
+                      }}
+                      variant="outline"
+                      className="w-full border-red-500/40 text-red-400 hover:bg-red-900/30"
+                      disabled={!user}
+                    >
+                      Sell for Tournament
+                    </Button>
+                  </>
+                )}
+
                 {!user && (
                   <p className="text-center text-xs text-muted-foreground">
                     Login to start trading
@@ -275,9 +333,9 @@ export default function StockDetailPage({
         symbol={symbol}
         name={stock.name}
         currentPrice={stock.currentPrice}
-        cashBalance={cashBalance}
-        heldQuantity={heldQuantity}
-        apiEndpoint={inTournament ? "/api/tournament/trade" : undefined}
+        cashBalance={tradeTarget === "tournament" ? tournamentCash : normalCash}
+        heldQuantity={tradeTarget === "tournament" ? tournamentQty : normalQty}
+        apiEndpoint={tradeTarget === "tournament" ? "/api/tournament/trade" : undefined}
       />
     </>
   );

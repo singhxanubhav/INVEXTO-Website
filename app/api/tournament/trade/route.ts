@@ -4,6 +4,13 @@ import { requireSession } from "@/src/lib/session";
 import { fetchQuote } from "@/src/lib/yahoo-finance";
 import { getStockBySymbol } from "@/src/data/nse-stocks";
 import { SimpleCache } from "@/src/lib/simple-cache";
+import fs from "fs";
+import path from "path";
+
+const logFile = path.join(process.cwd(), "scratch", "trade_debug.log");
+function appendLog(msg: string) {
+  try { fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${msg}\n`); } catch (e) {}
+}
 
 async function ensureStockRecord(symbol: string) {
   const existing = await prisma.stock.findUnique({ where: { symbol } });
@@ -24,10 +31,14 @@ async function ensureStockRecord(symbol: string) {
 
 export async function POST(req: NextRequest) {
   try {
+    appendLog(`=== NEW REQUEST ===`);
     const user = await requireSession(req);
+    appendLog(`User: ${user.id}`);
     const { stockSymbol, quantity, type } = await req.json();
+    appendLog(`Payload: ${stockSymbol}, ${quantity}, ${type}`);
 
     if (!stockSymbol || !quantity || quantity <= 0 || !Number.isInteger(quantity) || !["buy", "sell"].includes(type)) {
+      appendLog(`Invalid request parameters`);
       return NextResponse.json(
         { success: false, error: "Invalid request parameters" },
         { status: 400 }
@@ -66,11 +77,13 @@ export async function POST(req: NextRequest) {
     });
 
     if (!portfolio) {
+      appendLog(`Tournament portfolio not found`);
       return NextResponse.json(
         { success: false, error: "Tournament portfolio not found" },
         { status: 404 }
       );
     }
+    appendLog(`Portfolio found: ${portfolio.id}, cashBalance: ${portfolio.cashBalance}`);
 
     const quote = await fetchQuote(stockSymbol);
     const currentPrice = quote?.regularMarketPrice ? Number(quote.regularMarketPrice) : null;
@@ -85,17 +98,20 @@ export async function POST(req: NextRequest) {
     const stockRecord = await ensureStockRecord(stockSymbol);
 
     if (type === "buy") {
+      appendLog(`Processing BUY...`);
       const total = currentPrice * quantity;
       const cashBalance = Number(portfolio.cashBalance);
 
       if (cashBalance < total) {
+        appendLog(`Insufficient cash balance`);
         return NextResponse.json(
           { success: false, error: "Insufficient cash balance" },
           { status: 400 }
         );
       }
 
-      await prisma.$transaction(async (tx) => {
+      appendLog(`Starting transaction...`);
+      const txn = await prisma.$transaction(async (tx) => {
         await tx.portfolio.update({
           where: { id: portfolio.id },
           data: { cashBalance: { decrement: total } },
@@ -129,7 +145,7 @@ export async function POST(req: NextRequest) {
           });
         }
 
-        await tx.transaction.create({
+        return await tx.transaction.create({
           data: {
             portfolioId: portfolio.id,
             stockId: stockRecord.id,
@@ -141,11 +157,13 @@ export async function POST(req: NextRequest) {
         });
       });
 
+      appendLog(`Transaction completed successfully! Returning success: true. ID: ${txn.id}`);
       SimpleCache.del("tournament:leaderboard");
 
       return NextResponse.json({
         success: true,
         data: {
+          transactionId: txn.id,
           symbol: stockSymbol,
           quantity,
           price: currentPrice,
@@ -175,7 +193,7 @@ export async function POST(req: NextRequest) {
       const avgBuyPrice = Number(holding.avgBuyPrice);
       const realizedGain = (currentPrice - avgBuyPrice) * quantity;
 
-      await prisma.$transaction(async (tx) => {
+      const txn = await prisma.$transaction(async (tx) => {
         await tx.portfolio.update({
           where: { id: portfolio.id },
           data: { cashBalance: { increment: proceeds } },
@@ -191,7 +209,7 @@ export async function POST(req: NextRequest) {
           });
         }
 
-        await tx.transaction.create({
+        return await tx.transaction.create({
           data: {
             portfolioId: portfolio.id,
             stockId: stockRecord.id,
@@ -209,6 +227,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         data: {
+          transactionId: txn.id,
           symbol: stockSymbol,
           quantity,
           price: currentPrice,
