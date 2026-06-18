@@ -40,7 +40,7 @@ export default function TournamentResultsPage() {
     return (
       <>
         <Navbar />
-        <main className="relative mx-auto max-w-3xl px-4 py-16 text-center">
+        <main className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-6 flex justify-start">
             <button
               onClick={() => router.back()}
@@ -50,10 +50,12 @@ export default function TournamentResultsPage() {
               Back
             </button>
           </div>
-          <p className="text-gray-500">{error}</p>
-          <Link href="/tournament" className="mt-4 inline-flex items-center gap-2 text-sm text-amber-400 hover:text-amber-300">
-            <ArrowLeft className="h-4 w-4" /> Back to Tournament
-          </Link>
+          <div className="flex flex-col items-center justify-center min-h-[50vh]">
+            <p className="text-gray-500">{error}</p>
+            <Link href="/tournament" className="mt-4 inline-flex items-center gap-2 text-sm text-amber-400 hover:text-amber-300">
+              <ArrowLeft className="h-4 w-4" /> Back to Tournament
+            </Link>
+          </div>
         </main>
       </>
     );
@@ -63,7 +65,7 @@ export default function TournamentResultsPage() {
     return (
       <>
         <Navbar />
-        <main className="relative mx-auto max-w-3xl px-4 py-16 text-center">
+        <main className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
           <div className="mb-6 flex justify-start">
             <button
               onClick={() => router.back()}
@@ -73,7 +75,9 @@ export default function TournamentResultsPage() {
               Back
             </button>
           </div>
-          <Loader2 className="mx-auto h-6 w-6 animate-spin text-gray-500" />
+          <div className="flex items-center justify-center min-h-[50vh]">
+            <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+          </div>
         </main>
       </>
     );
@@ -82,7 +86,7 @@ export default function TournamentResultsPage() {
   return (
     <>
       <Navbar />
-      <main className="relative mx-auto max-w-4xl px-4 py-8">
+      <main className="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6 flex justify-start">
           <button
             onClick={() => { if (window.history.length > 1) router.back(); else router.push("/tournament"); }}
@@ -93,47 +97,67 @@ export default function TournamentResultsPage() {
           </button>
         </div>
 
-        <div className="mb-8 text-center">
-          <Trophy className="mx-auto mb-3 h-10 w-10 text-amber-400" />
-          <h1 className="text-2xl font-bold text-white">Tournament Results</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            {new Date(data.tournament.startDate).toLocaleDateString()} —{" "}
-            {new Date(data.tournament.endDate).toLocaleDateString()}
-          </p>
-          <p className="text-xs text-gray-600">{data.totalParticipants} participants</p>
+        <div className="mb-8 flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-900/20 border border-amber-500/20">
+            <Trophy className="h-6 w-6 text-amber-400" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-white">Tournament Results</h1>
+            <p className="mt-1 text-sm text-gray-500">
+              {new Date(data.tournament.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} —{" "}
+              {new Date(data.tournament.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+              <span className="mx-2">•</span>
+              {data.totalParticipants} participants
+            </p>
+          </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-4">
           {data.results.map((entry, index) => (
             <div
               key={index}
-              className="flex items-center justify-between rounded-xl border border-emerald-800/20 bg-emerald-950/20 px-5 py-4"
+              className="group relative flex flex-col sm:flex-row gap-6 sm:gap-0 items-start sm:items-center justify-between rounded-2xl border border-emerald-800/30 bg-gradient-to-r from-emerald-950/40 to-gray-900/40 px-6 py-5 transition-all hover:border-emerald-700/50 hover:bg-emerald-900/20 hover:shadow-[0_0_30px_-10px_rgba(16,185,129,0.15)] overflow-hidden"
             >
-              <div className="flex items-center gap-4">
-                <div className="flex h-8 w-8 items-center justify-center">
+              <div className="absolute left-0 top-0 h-full w-1 bg-emerald-600/30 transition-all group-hover:w-1.5 group-hover:bg-emerald-400" />
+              
+              <div className="flex items-center gap-5 pl-2">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-800/50 border border-gray-700/50 shadow-inner">
                   {entry.rank === 1 ? (
-                    <Medal className="h-6 w-6 text-yellow-400" />
+                    <Medal className="h-7 w-7 text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.4)]" />
                   ) : entry.rank === 2 ? (
-                    <Medal className="h-6 w-6 text-gray-300" />
+                    <Medal className="h-7 w-7 text-gray-300 drop-shadow-[0_0_8px_rgba(209,213,219,0.4)]" />
                   ) : entry.rank === 3 ? (
-                    <Medal className="h-6 w-6 text-amber-600" />
+                    <Medal className="h-7 w-7 text-amber-600 drop-shadow-[0_0_8px_rgba(217,119,6,0.4)]" />
                   ) : entry.rank ? (
-                    <span className="text-sm font-bold text-gray-500">#{entry.rank}</span>
+                    <span className="text-base font-bold text-gray-400">#{entry.rank}</span>
                   ) : (
-                    <span className="text-sm font-bold text-gray-600">—</span>
+                    <span className="text-base font-bold text-gray-600">—</span>
                   )}
                 </div>
-                <span className="font-medium text-white">{entry.name}</span>
+                <div className="flex flex-col">
+                  <span className="text-lg font-bold text-white">{entry.name}</span>
+                  <span className="text-xs text-gray-500 uppercase tracking-wider mt-0.5">Participant</span>
+                </div>
               </div>
-              <div className="flex items-center gap-6">
-                {entry.prizeAmount > 0 && (
-                  <span className="text-sm font-semibold text-emerald-400">
-                    {formatINR(entry.prizeAmount)}
+              
+              <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-8 sm:pr-4">
+                <div className="flex flex-col sm:items-end">
+                  <span className="text-[10px] uppercase tracking-wider text-gray-500 font-bold mb-1">Final Portfolio</span>
+                  <span className="font-mono text-lg font-semibold text-gray-200">
+                    {formatINR(entry.finalValue)}
                   </span>
-                )}
-                <span className="font-mono text-sm text-gray-400">
-                  {formatINR(entry.finalValue)}
-                </span>
+                </div>
+
+                <div className="flex flex-col sm:items-end">
+                  <span className="text-[10px] uppercase tracking-wider text-emerald-500/80 font-bold mb-1">Prize Won</span>
+                  {entry.prizeAmount > 0 ? (
+                    <span className="text-base font-bold text-emerald-400 bg-emerald-400/10 px-3 py-1 rounded-lg border border-emerald-500/20">
+                      {formatINR(entry.prizeAmount)}
+                    </span>
+                  ) : (
+                    <span className="text-base font-medium text-gray-600 py-1">—</span>
+                  )}
+                </div>
               </div>
             </div>
           ))}

@@ -133,6 +133,7 @@ export default function AdminTournamentPage() {
                 value={newStartDate}
                 onChange={(e) => setNewStartDate(e.target.value)}
                 className="rounded-lg border border-emerald-800/30 bg-emerald-950/30 px-3 py-2 text-sm text-foreground outline-none"
+                style={{ colorScheme: "dark" }}
               />
               <span className="text-muted-foreground text-sm">to</span>
               <input
@@ -140,6 +141,7 @@ export default function AdminTournamentPage() {
                 value={newEndDate}
                 onChange={(e) => setNewEndDate(e.target.value)}
                 className="rounded-lg border border-emerald-800/30 bg-emerald-950/30 px-3 py-2 text-sm text-foreground outline-none"
+                style={{ colorScheme: "dark" }}
               />
             </div>
             <Button
