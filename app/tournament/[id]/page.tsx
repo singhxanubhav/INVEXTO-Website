@@ -30,29 +30,28 @@ async function getTournamentData(tournamentId: string, userId: string) {
     return { isCompleted: true as const, tournamentId };
   }
 
-  const registration = await prisma.tournamentRegistration.findUnique({
-    where: {
-      tournamentId_userId: {
-        tournamentId,
-        userId,
+  const [registration, totalParticipants, dbPortfolio] = await Promise.all([
+    prisma.tournamentRegistration.findUnique({
+      where: {
+        tournamentId_userId: {
+          tournamentId,
+          userId,
+        },
       },
-    },
-  });
-
-  const totalParticipants = await prisma.tournamentRegistration.count({
-    where: { tournamentId },
-  });
+    }),
+    prisma.tournamentRegistration.count({
+      where: { tournamentId },
+    }),
+    prisma.portfolio.findFirst({
+      where: { userId, inTournament: true, tournamentId },
+    })
+  ]);
 
   let portfolio = null;
   let rank = null; // Currently not calculated dynamically here, to be fetched from leaderboard if needed
 
-  if (registration) {
-    const dbPortfolio = await prisma.portfolio.findFirst({
-      where: { userId, inTournament: true, tournamentId },
-    });
-    if (dbPortfolio) {
-      portfolio = { cashBalance: Number(dbPortfolio.cashBalance) };
-    }
+  if (registration && dbPortfolio) {
+    portfolio = { cashBalance: Number(dbPortfolio.cashBalance) };
   }
 
   return {

@@ -38,36 +38,33 @@ async function getAllPastTournaments() {
 }
 
 async function getData(userId: string) {
-  const activeTournamentsRaw = await prisma.tournament.findMany({
-    where: { status: "active" },
-    orderBy: { startDate: "asc" },
-  });
+  const [activeTournamentsRaw, pastTournaments] = await Promise.all([
+    prisma.tournament.findMany({
+      where: { status: "active" },
+      orderBy: { startDate: "asc" },
+    }),
+    getAllPastTournaments()
+  ]);
 
   const activeTournaments = await Promise.all(
     activeTournamentsRaw.map(async (tournament) => {
-      const registration = await prisma.tournamentRegistration.findUnique({
-        where: {
-          tournamentId_userId: {
-            tournamentId: tournament.id,
-            userId,
-          },
-        },
-      });
-
-      const totalParticipants = await prisma.tournamentRegistration.count({
-        where: { tournamentId: tournament.id },
-      });
+      const [registration, totalParticipants, dbPortfolio] = await Promise.all([
+        prisma.tournamentRegistration.findUnique({
+          where: { tournamentId_userId: { tournamentId: tournament.id, userId } },
+        }),
+        prisma.tournamentRegistration.count({
+          where: { tournamentId: tournament.id },
+        }),
+        prisma.portfolio.findFirst({
+          where: { userId, inTournament: true, tournamentId: tournament.id },
+        })
+      ]);
 
       let portfolio = null;
       let rank = null;
 
-      if (registration) {
-        const dbPortfolio = await prisma.portfolio.findFirst({
-          where: { userId, inTournament: true, tournamentId: tournament.id },
-        });
-        if (dbPortfolio) {
-          portfolio = { cashBalance: Number(dbPortfolio.cashBalance) };
-        }
+      if (registration && dbPortfolio) {
+        portfolio = { cashBalance: Number(dbPortfolio.cashBalance) };
       }
 
       return {
@@ -79,8 +76,6 @@ async function getData(userId: string) {
       };
     })
   );
-
-  const pastTournaments = await getAllPastTournaments();
 
   return {
     activeTournaments,

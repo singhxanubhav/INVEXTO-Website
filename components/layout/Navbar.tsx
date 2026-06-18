@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { TrendingUp, Menu, X, LayoutDashboard, Briefcase, Gamepad2, Trophy, BookOpen, Shield } from "lucide-react";
+import { TrendingUp, Menu, X, LayoutDashboard, Briefcase, Gamepad2, Trophy, BookOpen, Shield, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/src/hooks/useAuth";
 
@@ -57,25 +57,45 @@ export function Navbar() {
               ))}
             </div>
 
-            <div className="hidden items-center gap-3 md:flex">
-              {(user as any).isAdmin && (
-                <Link
-                  href="/admin"
-                  className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <Shield className="h-3 w-3" />
-                  Admin
-                </Link>
-              )}
-              <span className="text-sm text-emerald-300/70">{user.name}</span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={logout}
-                className="border-emerald-700/50 text-emerald-200 hover:bg-emerald-800 hover:text-white"
-              >
-                Logout
-              </Button>
+            <div className="hidden items-center md:flex ml-4">
+              <div className="relative group">
+                {/* Avatar Button */}
+                <div className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-emerald-800 text-sm font-bold text-white shadow-lg ring-2 ring-emerald-500/20 transition-all hover:scale-105 hover:ring-emerald-400/40">
+                  {user.name ? user.name.split(" ").map((n: string) => n[0]).join("").substring(0, 2).toUpperCase() : "U"}
+                </div>
+                
+                {/* Invisible hover bridge to prevent menu from closing when moving mouse */}
+                <div className="absolute top-full right-0 w-full h-3"></div>
+
+                {/* Dropdown Menu */}
+                <div className="absolute right-0 top-[calc(100%+8px)] w-56 origin-top-right rounded-xl border border-emerald-800/40 bg-emerald-950/95 p-2 shadow-2xl backdrop-blur opacity-0 invisible transition-all group-hover:visible group-hover:opacity-100 group-hover:-translate-y-1 z-50">
+                  <div className="px-3 py-2 border-b border-emerald-800/40 mb-2 pb-3">
+                    <p className="text-sm font-medium text-emerald-50">{user.name}</p>
+                    <p className="text-[10px] text-emerald-400/80 uppercase tracking-wider mt-0.5">
+                      {(user as any).isAdmin ? "Administrator" : "User Account"}
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    {(user as any).isAdmin && (
+                      <Link
+                        href="/admin"
+                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-emerald-200 hover:bg-emerald-800/50 hover:text-white transition-colors"
+                      >
+                        <Shield className="h-4 w-4 text-emerald-400" />
+                        Admin Dashboard
+                      </Link>
+                    )}
+                    <button
+                      onClick={logout}
+                      className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-red-400 hover:bg-red-500/15 hover:text-red-300 transition-colors"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <button
@@ -106,7 +126,12 @@ export function Navbar() {
               <Link href="/register">Register</Link>
             </Button>
           </div>
-        ) : null}
+        ) : (
+          <div className="flex items-center gap-3">
+            <div className="hidden h-9 w-20 animate-pulse rounded-lg bg-emerald-800/20 md:block"></div>
+            <div className="h-10 w-10 animate-pulse rounded-full bg-emerald-800/30"></div>
+          </div>
+        )}
       </div>
 
       {!loading && user && mobileOpen && (
@@ -139,8 +164,13 @@ export function Navbar() {
               </Link>
             )}
             <hr className="border-emerald-800/40" />
-            <div className="px-3 py-2 text-xs text-emerald-300/70">
-              {user.name}
+            <div className="flex items-center gap-3 px-3 py-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-800/50 text-xs font-semibold text-emerald-200 ring-1 ring-emerald-700/50">
+                {user.name ? user.name.split(" ").map((n: string) => n[0]).join("").substring(0, 2).toUpperCase() : "U"}
+              </div>
+              <div className="text-sm font-medium text-emerald-100">
+                {user.name}
+              </div>
             </div>
             <button
               onClick={() => {
