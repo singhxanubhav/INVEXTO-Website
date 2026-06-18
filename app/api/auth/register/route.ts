@@ -3,6 +3,9 @@ import { prisma } from "@/src/lib/prisma";
 import { signToken, hashPassword } from "@/src/lib/auth";
 import type { ApiResponse, User } from "@/src/types";
 
+import crypto from "crypto";
+import { sendOtpEmail } from "@/src/lib/email";
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -39,9 +42,20 @@ export async function POST(request: Request) {
     }
 
     const passwordHash = await hashPassword(password);
+    
+    // Generate a 6-digit numeric OTP
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     const dbUser = await prisma.user.create({
-      data: { name, email, passwordHash, upiId: upiId || null },
+      data: { 
+        name, 
+        email, 
+        passwordHash, 
+        upiId: upiId || null,
+        otp,
+        otpExpires
+      },
       select: { id: true, name: true, email: true, upiId: true, isAdmin: true, createdAt: true },
     });
 
@@ -52,36 +66,13 @@ export async function POST(request: Request) {
       },
     });
 
-    const token = signToken({
-      userId: dbUser.id,
-      email: dbUser.email,
-      name: dbUser.name,
-      isAdmin: dbUser.isAdmin,
-    });
+    // Send OTP email
+    await sendOtpEmail(email, otp);
 
-    const user: User = {
-      id: dbUser.id,
-      name: dbUser.name,
-      email: dbUser.email,
-      upiId: dbUser.upiId,
-      isAdmin: dbUser.isAdmin,
-      createdAt: dbUser.createdAt.toISOString(),
-    };
-
-    const response = NextResponse.json(
-      { success: true, data: user } satisfies ApiResponse<User>,
+    return NextResponse.json(
+      { success: true, email: dbUser.email, message: "Registration successful. Please check your email for the verification code." },
       { status: 201 }
     );
-
-    response.cookies.set("invexto_token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60,
-      path: "/",
-    });
-
-    return response;
   } catch (error) {
     console.error("Register error:", error);
     return NextResponse.json(
