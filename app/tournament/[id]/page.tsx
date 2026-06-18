@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { Trophy, ArrowRight, ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
 import { formatINR } from "@/lib/format";
 import { TournamentRulesCard } from "@/components/tournament/TournamentRulesCard";
@@ -22,8 +22,12 @@ async function getTournamentData(tournamentId: string, userId: string) {
     where: { id: tournamentId },
   });
 
-  if (!tournament || tournament.status !== "active") {
+  if (!tournament || (tournament.status !== "active" && tournament.status !== "completed")) {
     return null;
+  }
+
+  if (tournament.status === "completed") {
+    return { isCompleted: true as const, tournamentId };
   }
 
   const registration = await prisma.tournamentRegistration.findUnique({
@@ -52,6 +56,7 @@ async function getTournamentData(tournamentId: string, userId: string) {
   }
 
   return {
+    isCompleted: false as const,
     tournament,
     registration,
     portfolio,
@@ -87,6 +92,10 @@ export default async function TournamentDetailsPage({ params }: { params: Promis
 
   if (!data) {
     notFound();
+  }
+
+  if (data.isCompleted) {
+    redirect(`/tournament/results/${data.tournamentId}`);
   }
 
   return (

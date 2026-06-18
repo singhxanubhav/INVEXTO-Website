@@ -24,6 +24,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       }, { status: 404 });
     }
 
+    if (tournament.status === "completed") {
+      return NextResponse.json({
+        success: false,
+        redirect: `/tournament/results/${tournament.id}`,
+      });
+    }
+
     const registrations = await prisma.tournamentRegistration.findMany({
       where: { tournamentId: tournament.id },
       include: {

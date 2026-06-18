@@ -36,6 +36,10 @@ export default function LeaderboardPage({ params }: { params: Promise<{ id: stri
     try {
       const res = await fetch(`/api/tournament/leaderboard/${id}`);
       const json = await res.json();
+      if (json.redirect) {
+        router.push(json.redirect);
+        return;
+      }
       if (json.success && json.data) {
         setData(json.data);
         setSecondsAgo(0);
