@@ -5,11 +5,18 @@ import { requireSession } from "@/src/lib/session";
 export async function POST(req: NextRequest) {
   try {
     const user = await requireSession(req);
-    const { phone } = await req.json();
+    const { phone, upiId } = await req.json();
 
     if (!phone || !/^\d{10}$/.test(phone)) {
       return NextResponse.json(
         { success: false, error: "Phone must be exactly 10 digits" },
+        { status: 400 }
+      );
+    }
+
+    if (!upiId || typeof upiId !== "string" || upiId.length < 5) {
+      return NextResponse.json(
+        { success: false, error: "Valid UPI ID is required" },
         { status: 400 }
       );
     }
@@ -42,6 +49,12 @@ export async function POST(req: NextRequest) {
     }
 
     await prisma.$transaction(async (tx) => {
+      // Update user's UPI ID for prize payouts
+      await tx.user.update({
+        where: { id: user.id },
+        data: { upiId },
+      });
+
       await tx.portfolio.create({
         data: {
           userId: user.id,

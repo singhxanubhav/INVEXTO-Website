@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 const registerSchema = z.object({
+  upiId: z.string().min(5, "Valid UPI ID is required for prizes"),
   phone: z.string().regex(/^\d{10}$/, "Phone must be exactly 10 digits"),
   terms: z.boolean().refine((val) => val === true, "You must accept the terms"),
 });
@@ -33,9 +34,17 @@ export function RegisterForm({ tournamentId }: Props) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [userName, setUserName] = useState("");
-  const [upiId, setUpiId] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingData, setPendingData] = useState<RegisterFormData | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+  });
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -43,19 +52,13 @@ export function RegisterForm({ tournamentId }: Props) {
       .then((json) => {
         if (json.success) {
           setUserName(json.data.name);
-          setUpiId(json.data.upiId);
+          if (json.data.upiId) {
+            setValue("upiId", json.data.upiId);
+          }
         }
       })
       .catch(() => {});
-  }, []);
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<RegisterFormData>({
-    resolver: zodResolver(registerSchema),
-  });
+  }, [setValue]);
 
   const onFormSubmit = (data: RegisterFormData) => {
     setPendingData(data);
@@ -72,6 +75,7 @@ export function RegisterForm({ tournamentId }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           phone: pendingData.phone,
+          upiId: pendingData.upiId,
         }),
       });
       const json = await res.json();
@@ -101,7 +105,7 @@ export function RegisterForm({ tournamentId }: Props) {
       <div className="rounded-2xl border border-emerald-800/30 bg-gradient-to-br from-emerald-900/30 to-gray-950 p-6">
         <h2 className="mb-1 text-xl font-bold text-white">Register Now</h2>
         <p className="mb-6 text-sm text-gray-500">
-          Enter your phone number to join the tournament
+          Enter your phone and UPI ID to join the tournament
         </p>
 
         <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
@@ -113,20 +117,21 @@ export function RegisterForm({ tournamentId }: Props) {
 
           <div>
             <label className="mb-1.5 block text-xs font-medium text-gray-400">
-              Prize will be sent to your UPI ID
+              UPI ID (for cash prizes)
             </label>
-            {upiId ? (
-              <div className="flex items-center gap-2 rounded-xl border border-emerald-800/20 bg-emerald-950/30 px-3 py-2.5 text-sm text-gray-400">
-                <Shield className="h-4 w-4 shrink-0 text-emerald-500" />
-                <span className="text-white">{upiId}</span>
-              </div>
-            ) : (
-              <div className="rounded-xl border border-amber-800/20 bg-amber-950/20 px-3 py-2.5 text-xs text-amber-400">
-                ⚠️ You haven&apos;t added a UPI ID. Add one in Profile Settings to be eligible for prize payouts.
-              </div>
+            <div className="relative">
+              <Shield className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-600" />
+              <input
+                {...register("upiId")}
+                placeholder="yourname@bank"
+                className="w-full rounded-xl border border-emerald-800/25 bg-emerald-950/30 py-2.5 pl-10 pr-3 text-sm text-white placeholder:text-gray-600 outline-none transition focus:border-emerald-600/50 focus:ring-1 focus:ring-emerald-600/20"
+              />
+            </div>
+            {errors.upiId && (
+              <p className="mt-1 text-xs text-red-400">{errors.upiId.message}</p>
             )}
             <p className="mt-1 text-[11px] text-gray-600">
-              To update your UPI ID, go to Profile Settings
+              This will update your profile's UPI ID.
             </p>
           </div>
 

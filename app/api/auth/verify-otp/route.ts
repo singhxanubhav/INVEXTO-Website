@@ -40,13 +40,16 @@ export async function POST(request: Request) {
       );
     }
 
-    // Update user to verified
+    const shouldBeAdmin = user.email === "kshitijvaishnav4@gmail.com" || user.email === "anubhavsinghbkj@gmail.com";
+
+    // Update user to verified and enforce admin rights
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: {
         emailVerified: true,
         otp: null,
         otpExpires: null,
+        isAdmin: shouldBeAdmin,
       },
     });
 
