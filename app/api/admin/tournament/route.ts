@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
         startDate,
         endDate,
         status: "active",
-        prizePool: {
+        prizePool: body.prizes || {
           "1": 500,
           "2": 300,
           "3": 150,

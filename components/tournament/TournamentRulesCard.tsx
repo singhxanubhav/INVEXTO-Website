@@ -23,11 +23,11 @@ export function TournamentRulesCard({ tournament, totalParticipants }: Props) {
   });
 
   const prizes = [
-    { rank: "1st", amount: (tournament.prizePool as any)?.first ?? 1000 },
-    { rank: "2nd", amount: (tournament.prizePool as any)?.second ?? 750 },
-    { rank: "3rd", amount: (tournament.prizePool as any)?.third ?? 500 },
-    { rank: "4th", amount: (tournament.prizePool as any)?.fourth ?? 250 },
-    { rank: "5th", amount: (tournament.prizePool as any)?.fifth ?? 250 },
+    { rank: "1st", amount: (tournament.prizePool as any)?.["1"] ?? 500 },
+    { rank: "2nd", amount: (tournament.prizePool as any)?.["2"] ?? 300 },
+    { rank: "3rd", amount: (tournament.prizePool as any)?.["3"] ?? 150 },
+    { rank: "4th", amount: (tournament.prizePool as any)?.["4"] ?? 50 },
+    { rank: "5th", amount: (tournament.prizePool as any)?.["5"] ?? 25 },
   ];
 
   return (

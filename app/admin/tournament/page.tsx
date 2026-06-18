@@ -25,6 +25,13 @@ export default function AdminTournamentPage() {
   const [closingId, setClosingId] = useState<string | null>(null);
   const [newStartDate, setNewStartDate] = useState("");
   const [newEndDate, setNewEndDate] = useState("");
+  const [prizes, setPrizes] = useState({
+    "1": 500,
+    "2": 300,
+    "3": 150,
+    "4": 50,
+    "5": 25,
+  });
 
   const fetchData = () => {
     setLoading(true);
@@ -51,7 +58,7 @@ export default function AdminTournamentPage() {
       const res = await fetch("/api/admin/tournament", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ startDate: newStartDate, endDate: newEndDate }),
+        body: JSON.stringify({ startDate: newStartDate, endDate: newEndDate, prizes }),
       });
       const json = await res.json();
       if (json.success) {
@@ -130,32 +137,53 @@ export default function AdminTournamentPage() {
               </p>
             </div>
           </div>
-          <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-2">
-              <input
-                type="date"
-                value={newStartDate}
-                onChange={(e) => setNewStartDate(e.target.value)}
-                className="rounded-lg border border-emerald-800/30 bg-emerald-950/30 px-3 py-2 text-sm text-foreground outline-none"
-                style={{ colorScheme: "dark" }}
-              />
-              <span className="text-muted-foreground text-sm">to</span>
-              <input
-                type="date"
-                value={newEndDate}
-                onChange={(e) => setNewEndDate(e.target.value)}
-                className="rounded-lg border border-emerald-800/30 bg-emerald-950/30 px-3 py-2 text-sm text-foreground outline-none"
-                style={{ colorScheme: "dark" }}
-              />
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center">
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={newStartDate}
+                  onChange={(e) => setNewStartDate(e.target.value)}
+                  className="rounded-lg border border-emerald-800/30 bg-emerald-950/30 px-3 py-2 text-sm text-foreground outline-none"
+                  style={{ colorScheme: "dark" }}
+                />
+                <span className="text-muted-foreground text-sm">to</span>
+                <input
+                  type="date"
+                  value={newEndDate}
+                  onChange={(e) => setNewEndDate(e.target.value)}
+                  className="rounded-lg border border-emerald-800/30 bg-emerald-950/30 px-3 py-2 text-sm text-foreground outline-none"
+                  style={{ colorScheme: "dark" }}
+                />
+              </div>
             </div>
-            <Button
-              onClick={handleCreate}
-              disabled={creating}
-              className="bg-emerald-600 text-white hover:bg-emerald-500"
-            >
-              {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trophy className="mr-2 h-4 w-4" />}
-              {creating ? "Creating..." : "Create Tournament"}
-            </Button>
+            
+            <div className="flex flex-col sm:flex-row items-end gap-4 rounded-xl border border-emerald-900/40 bg-emerald-950/20 p-4">
+              <div className="grid grid-cols-5 gap-2 w-full">
+                {[1, 2, 3, 4, 5].map((rank) => (
+                  <div key={rank} className="flex flex-col gap-1">
+                    <label className="text-[10px] font-semibold text-emerald-500 uppercase tracking-wider">
+                      Rank {rank} (₹)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={prizes[rank.toString() as keyof typeof prizes]}
+                      onChange={(e) => setPrizes(prev => ({ ...prev, [rank.toString()]: parseInt(e.target.value) || 0 }))}
+                      className="w-full rounded-lg border border-emerald-800/30 bg-emerald-950/50 px-2 py-1.5 text-xs text-foreground outline-none focus:border-emerald-500/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                  </div>
+                ))}
+              </div>
+              <Button
+                onClick={handleCreate}
+                disabled={creating}
+                className="bg-emerald-600 text-white hover:bg-emerald-500 shrink-0 h-10"
+              >
+                {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trophy className="mr-2 h-4 w-4" />}
+                {creating ? "Creating..." : "Create"}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
