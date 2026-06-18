@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
     }
 
-    const body = await request.json();
+    const body = await request.json().catch(() => ({}));
     const startDate = body.startDate ? new Date(body.startDate) : new Date();
     const endDate = body.endDate
       ? new Date(body.endDate)
@@ -78,7 +78,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: tournament }, { status: 201 });
   } catch (err: any) {
+    console.error("[Create Tournament Error]", err);
     if (err instanceof NextResponse) return err;
-    return NextResponse.json({ success: false, error: "Failed to create tournament" }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Failed to create tournament", details: err.message }, { status: 500 });
   }
 }

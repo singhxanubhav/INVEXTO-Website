@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { Search, ChevronDown, ChevronUp, Shield, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
@@ -97,9 +97,8 @@ export default function AdminUsersPage() {
             </thead>
             <tbody>
               {filtered.map((u) => (
-                <>
+                <Fragment key={u.id}>
                   <tr
-                    key={u.id}
                     onClick={() => setExpandedId(expandedId === u.id ? null : u.id)}
                     className="cursor-pointer border-b border-emerald-800/20 transition-colors hover:bg-emerald-900/30"
                   >
@@ -151,7 +150,7 @@ export default function AdminUsersPage() {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>
