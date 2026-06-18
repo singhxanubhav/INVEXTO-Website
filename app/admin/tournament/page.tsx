@@ -23,6 +23,8 @@ export default function AdminTournamentPage() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [newStartDate, setNewStartDate] = useState("");
+  const [newEndDate, setNewEndDate] = useState("");
 
   const fetchData = () => {
     setLoading(true);
@@ -37,12 +39,20 @@ export default function AdminTournamentPage() {
 
   useEffect(() => {
     fetchData();
+    const today = new Date();
+    setNewStartDate(today.toISOString().split("T")[0]);
+    const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    setNewEndDate(end.toISOString().split("T")[0]);
   }, []);
 
   const handleCreate = async () => {
     setCreating(true);
     try {
-      const res = await fetch("/api/admin/tournament", { method: "POST" });
+      const res = await fetch("/api/admin/tournament", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ startDate: newStartDate, endDate: newEndDate }),
+      });
       const json = await res.json();
       if (json.success) {
         toast.success("Tournament created!");
@@ -116,14 +126,31 @@ export default function AdminTournamentPage() {
               </p>
             </div>
           </div>
-          <Button
-            onClick={handleCreate}
-            disabled={creating}
-            className="bg-emerald-600 text-white hover:bg-emerald-500"
-          >
-            {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trophy className="h-4 w-4" />}
-            {creating ? "Creating..." : "Create Tournament"}
-          </Button>
+          <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={newStartDate}
+                onChange={(e) => setNewStartDate(e.target.value)}
+                className="rounded-lg border border-emerald-800/30 bg-emerald-950/30 px-3 py-2 text-sm text-foreground outline-none"
+              />
+              <span className="text-muted-foreground text-sm">to</span>
+              <input
+                type="date"
+                value={newEndDate}
+                onChange={(e) => setNewEndDate(e.target.value)}
+                className="rounded-lg border border-emerald-800/30 bg-emerald-950/30 px-3 py-2 text-sm text-foreground outline-none"
+              />
+            </div>
+            <Button
+              onClick={handleCreate}
+              disabled={creating}
+              className="bg-emerald-600 text-white hover:bg-emerald-500"
+            >
+              {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trophy className="mr-2 h-4 w-4" />}
+              {creating ? "Creating..." : "Create Tournament"}
+            </Button>
+          </div>
         </div>
       </div>
 

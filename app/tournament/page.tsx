@@ -27,10 +27,13 @@ async function getUserId(): Promise<string | null> {
   return payload?.userId ?? null;
 }
 
-async function getLatestPastTournament() {
-  return prisma.tournament.findFirst({
+async function getAllPastTournaments() {
+  return prisma.tournament.findMany({
     where: { status: "completed" },
     orderBy: { endDate: "desc" },
+    include: {
+      _count: { select: { registrations: true } }
+    }
   });
 }
 
@@ -39,9 +42,10 @@ async function getData(userId: string) {
     where: { status: "active" },
   });
 
+  const pastTournaments = await getAllPastTournaments();
+
   if (!tournament) {
-    const latest = await getLatestPastTournament();
-    return { tournament: null, registration: null, portfolio: null, rank: null, totalParticipants: 0, latestPastTournament: latest };
+    return { tournament: null, registration: null, portfolio: null, rank: null, totalParticipants: 0, pastTournaments };
   }
 
   const registration = await prisma.tournamentRegistration.findUnique({
@@ -75,7 +79,7 @@ async function getData(userId: string) {
     portfolio,
     rank,
     totalParticipants,
-    latestPastTournament: null,
+    pastTournaments,
   };
 }
 
@@ -103,12 +107,7 @@ export default async function TournamentPage() {
 
   const data = await getData(userId);
 
-  const lastTournament = data.latestPastTournament
-    ? {
-        id: data.latestPastTournament.id,
-        endDate: data.latestPastTournament.endDate.toISOString(),
-      }
-    : null;
+
 
   const nextMonth = getNextMonthStart();
   const nextMonthName = getNextMonthName();
@@ -132,6 +131,7 @@ export default async function TournamentPage() {
           </div>
 
         </main>
+        <TournamentHistoryList pastTournaments={data.pastTournaments} />
       </>
     );
   }
@@ -159,6 +159,7 @@ export default async function TournamentPage() {
             <RegisterForm tournamentId={data.tournament.id} />
           </div>
         </main>
+        <TournamentHistoryList pastTournaments={data.pastTournaments} />
       </>
     );
   }
@@ -230,6 +231,58 @@ export default async function TournamentPage() {
           </Link>
         </div>
       </main>
+      <TournamentHistoryList pastTournaments={data.pastTournaments} />
     </>
+  );
+}
+
+function TournamentHistoryList({ pastTournaments }: { pastTournaments: any[] }) {
+  if (!pastTournaments || pastTournaments.length === 0) return null;
+
+  return (
+    <section className="w-full px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto pb-16 pt-8">
+      <div className="flex items-center gap-3 mb-8">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-900/30">
+          <Trophy className="h-5 w-5 text-emerald-400" />
+        </div>
+        <h2 className="text-2xl font-bold text-white">Tournament History</h2>
+      </div>
+
+      <div className="flex flex-col gap-4">
+        {pastTournaments.map((t) => (
+          <div 
+            key={t.id} 
+            className="group relative flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-2xl border border-emerald-800/30 bg-gradient-to-r from-emerald-950/40 to-gray-900/40 p-6 transition-all hover:border-emerald-700/50 hover:bg-emerald-900/20 hover:shadow-[0_0_30px_-10px_rgba(16,185,129,0.15)] overflow-hidden"
+          >
+            <div className="absolute left-0 top-0 h-full w-1 bg-emerald-600/50 transition-all group-hover:w-1.5 group-hover:bg-emerald-400" />
+            
+            <div className="pl-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400 mb-1.5">
+                {new Date(t.startDate).toLocaleDateString("en-IN", { month: "long", year: "numeric" })}
+              </p>
+              <h3 className="text-lg font-bold text-white mb-1">
+                {new Date(t.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} — {new Date(t.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+              </h3>
+              <div className="flex flex-wrap items-center gap-2 text-sm text-gray-400">
+                <span className="flex items-center gap-1.5">
+                  <div className="h-1.5 w-1.5 rounded-full bg-gray-500" />
+                  {t._count.registrations} Participants
+                </span>
+                <span className="hidden sm:inline">•</span>
+                <span className="rounded bg-emerald-900/50 border border-emerald-800/50 px-2 py-0.5 text-[10px] font-medium text-emerald-300">COMPLETED</span>
+              </div>
+            </div>
+
+            <Link
+              href={`/tournament/results/${t.id}`}
+              className="mt-5 sm:mt-0 inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-emerald-600/10 border border-emerald-600/20 px-5 py-2.5 text-sm font-semibold text-emerald-400 transition-all hover:bg-emerald-600 hover:text-white"
+            >
+              View Full Results
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }

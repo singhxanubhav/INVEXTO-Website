@@ -41,13 +41,15 @@ export default function TournamentResultsPage() {
       <>
         <Navbar />
         <main className="relative mx-auto max-w-3xl px-4 py-16 text-center">
-          <button
-            onClick={() => router.back()}
-            className="absolute left-4 top-4 z-20 flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </button>
+          <div className="mb-6 flex justify-start">
+            <button
+              onClick={() => router.back()}
+              className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </button>
+          </div>
           <p className="text-gray-500">{error}</p>
           <Link href="/tournament" className="mt-4 inline-flex items-center gap-2 text-sm text-amber-400 hover:text-amber-300">
             <ArrowLeft className="h-4 w-4" /> Back to Tournament
@@ -62,13 +64,15 @@ export default function TournamentResultsPage() {
       <>
         <Navbar />
         <main className="relative mx-auto max-w-3xl px-4 py-16 text-center">
-          <button
-            onClick={() => router.back()}
-            className="absolute left-4 top-4 z-20 flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </button>
+          <div className="mb-6 flex justify-start">
+            <button
+              onClick={() => router.back()}
+              className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </button>
+          </div>
           <Loader2 className="mx-auto h-6 w-6 animate-spin text-gray-500" />
         </main>
       </>
@@ -79,13 +83,15 @@ export default function TournamentResultsPage() {
     <>
       <Navbar />
       <main className="relative mx-auto max-w-4xl px-4 py-8">
-        <button
-          onClick={() => { if (window.history.length > 1) router.back(); else router.push("/tournament"); }}
-          className="absolute left-4 top-4 z-20 flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </button>
+        <div className="mb-6 flex justify-start">
+          <button
+            onClick={() => { if (window.history.length > 1) router.back(); else router.push("/tournament"); }}
+            className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </button>
+        </div>
 
         <div className="mb-8 text-center">
           <Trophy className="mx-auto mb-3 h-10 w-10 text-amber-400" />
@@ -98,9 +104,9 @@ export default function TournamentResultsPage() {
         </div>
 
         <div className="space-y-2">
-          {data.results.map((entry) => (
+          {data.results.map((entry, index) => (
             <div
-              key={entry.rank}
+              key={index}
               className="flex items-center justify-between rounded-xl border border-emerald-800/20 bg-emerald-950/20 px-5 py-4"
             >
               <div className="flex items-center gap-4">
@@ -111,8 +117,10 @@ export default function TournamentResultsPage() {
                     <Medal className="h-6 w-6 text-gray-300" />
                   ) : entry.rank === 3 ? (
                     <Medal className="h-6 w-6 text-amber-600" />
-                  ) : (
+                  ) : entry.rank ? (
                     <span className="text-sm font-bold text-gray-500">#{entry.rank}</span>
+                  ) : (
+                    <span className="text-sm font-bold text-gray-600">—</span>
                   )}
                 </div>
                 <span className="font-medium text-white">{entry.name}</span>
@@ -129,6 +137,11 @@ export default function TournamentResultsPage() {
               </div>
             </div>
           ))}
+          {data.results.length === 0 && (
+            <div className="py-12 text-center text-sm text-gray-500">
+              No participants found or results are still being calculated.
+            </div>
+          )}
         </div>
       </main>
     </>

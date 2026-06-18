@@ -20,9 +20,12 @@ export async function GET(
     }
 
     const registrations = await prisma.tournamentRegistration.findMany({
-      where: { tournamentId: id, finalRank: { not: null } },
-      orderBy: { finalRank: "asc" },
-      take: 10,
+      where: { tournamentId: id },
+      orderBy: [
+        { finalRank: "asc" },
+        { registeredAt: "asc" }
+      ],
+      take: 50,
       include: { user: true },
     });
 
