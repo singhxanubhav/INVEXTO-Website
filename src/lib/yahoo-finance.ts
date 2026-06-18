@@ -453,29 +453,27 @@ export async function fetchHistoricalMulti(
   const results: Record<string, number[]> = {};
   let minLen = Infinity;
 
-  for (let i = 0; i < symbols.length; i += 5) {
-    const batch = symbols.slice(i, i + 5);
-    const promises = batch.map(async (sym) => {
-      try {
-        const data = await yahooFinance.chart(sym, {
-          period1,
-          period2,
-          interval: "1d",
-        });
-        const prices = (data.quotes ?? [])
-          .filter((q: any) => q && q.close != null)
-          .map((q: any) => Number(q.close));
-        return { symbol: sym, prices };
-      } catch (err: any) {
-        console.error(`[Yahoo] fetchHistoricalMulti(${sym}) failed:`, err?.message ?? err);
-        return { symbol: sym, prices: [] };
-      }
-    });
-    const batchResults = await Promise.all(promises);
-    for (const r of batchResults) {
-      if (r.prices.length > 0 && r.prices.length < minLen) minLen = r.prices.length;
-      results[r.symbol] = r.prices;
+  const promises = symbols.map(async (sym) => {
+    try {
+      const data = await yahooFinance.chart(sym, {
+        period1,
+        period2,
+        interval: "1d",
+      });
+      const prices = (data.quotes ?? [])
+        .filter((q: any) => q && q.close != null)
+        .map((q: any) => Number(q.close));
+      return { symbol: sym, prices };
+    } catch (err: any) {
+      console.error(`[Yahoo] fetchHistoricalMulti(${sym}) failed:`, err?.message ?? err);
+      return { symbol: sym, prices: [] };
     }
+  });
+
+  const allResults = await Promise.all(promises);
+  for (const r of allResults) {
+    if (r.prices.length > 0 && r.prices.length < minLen) minLen = r.prices.length;
+    results[r.symbol] = r.prices;
   }
 
   if (minLen === Infinity || minLen === 0) {

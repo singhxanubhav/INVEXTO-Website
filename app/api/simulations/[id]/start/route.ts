@@ -12,9 +12,19 @@ export async function POST(
     const user = await requireSession(req);
     const { id } = await params;
 
-    const existing = await prisma.simulationSnapshot.findUnique({
-      where: { userId: user.id },
-    });
+    const [existing, portfolio, event] = await Promise.all([
+      prisma.simulationSnapshot.findUnique({
+        where: { userId: user.id },
+      }),
+      prisma.portfolio.findFirst({
+        where: { userId: user.id },
+        include: { holdings: { include: { stock: true } } },
+      }),
+      prisma.simulationEvent.findUnique({
+        where: { id },
+      }),
+    ]);
+
     if (existing) {
       return NextResponse.json(
         { success: false, error: "A simulation is already in progress. End it first." },
@@ -22,14 +32,16 @@ export async function POST(
       );
     }
 
-    const portfolio = await prisma.portfolio.findFirst({
-      where: { userId: user.id },
-      include: { holdings: { include: { stock: true } } },
-    });
-
     if (!portfolio) {
       return NextResponse.json(
         { success: false, error: "Portfolio not found" },
+        { status: 404 }
+      );
+    }
+
+    if (!event) {
+      return NextResponse.json(
+        { success: false, error: "Event not found" },
         { status: 404 }
       );
     }
@@ -72,16 +84,6 @@ export async function POST(
         avgBuyPrice: Number(h.avgBuyPrice),
       })),
     };
-
-    const event = await prisma.simulationEvent.findUnique({
-      where: { id },
-    });
-    if (!event) {
-      return NextResponse.json(
-        { success: false, error: "Event not found" },
-        { status: 404 }
-      );
-    }
 
     await prisma.$transaction(async (tx) => {
       await tx.simulationSnapshot.create({
