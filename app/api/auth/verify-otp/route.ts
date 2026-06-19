@@ -2,55 +2,65 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/src/lib/prisma";
 import { signToken } from "@/src/lib/auth";
 import type { ApiResponse, User } from "@/src/types";
+import jwt from "jsonwebtoken";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, otp } = body;
+    const { pendingToken, otp } = body;
 
-    if (!email || !otp) {
+    if (!pendingToken || !otp) {
       return NextResponse.json(
-        { success: false, error: "Email and OTP are required" },
+        { success: false, error: "Pending token and OTP are required" },
         { status: 400 }
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (!user) {
+    const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret";
+    let payload: any;
+    try {
+      payload = jwt.verify(pendingToken, JWT_SECRET);
+    } catch {
       return NextResponse.json(
-        { success: false, error: "User not found" },
-        { status: 404 }
+        { success: false, error: "Session expired. Please register again." },
+        { status: 400 }
       );
     }
 
-    if (user.otp !== otp) {
+    if (payload.otp !== otp) {
       return NextResponse.json(
         { success: false, error: "Invalid OTP" },
         { status: 400 }
       );
     }
 
-    if (!user.otpExpires || new Date() > user.otpExpires) {
+    if (new Date() > new Date(payload.otpExpires)) {
       return NextResponse.json(
-        { success: false, error: "OTP has expired. Please register again or request a new OTP." },
+        { success: false, error: "OTP has expired. Please register again." },
         { status: 400 }
       );
     }
 
-    const shouldBeAdmin = user.email === "kshitijvaishnav4@gmail.com" || user.email === "anubhavsinghbkj@gmail.com";
+    const existingUser = await prisma.user.findUnique({ where: { email: payload.email } });
+    if (existingUser) {
+      return NextResponse.json({ success: false, error: "Email already registered" }, { status: 400 });
+    }
 
-    // Update user to verified and enforce admin rights
-    const updatedUser = await prisma.user.update({
-      where: { id: user.id },
+    const shouldBeAdmin = payload.email === "kshitijvaishnav4@gmail.com" || payload.email === "anubhavsinghbkj@gmail.com";
+
+    const updatedUser = await prisma.user.create({
       data: {
+        name: payload.name,
+        email: payload.email,
+        passwordHash: payload.passwordHash,
+        upiId: payload.upiId,
         emailVerified: true,
-        otp: null,
-        otpExpires: null,
         isAdmin: shouldBeAdmin,
       },
+    });
+
+    await prisma.portfolio.create({
+      data: { userId: updatedUser.id, cashBalance: 100000 },
     });
 
     // Automatically log them in by generating a token

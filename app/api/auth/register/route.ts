@@ -48,21 +48,20 @@ export async function POST(request: Request) {
 
     if (requireOtp) {
       const otp = crypto.randomInt(100000, 999999).toString();
-      const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      const otpExpires = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 minutes
 
-      const dbUser = await prisma.user.create({
-        data: { name, email, passwordHash, upiId: upiId || null, otp, otpExpires },
-        select: { id: true, name: true, email: true, upiId: true, isAdmin: true, createdAt: true },
-      });
-
-      await prisma.portfolio.create({
-        data: { userId: dbUser.id, cashBalance: 100000 },
-      });
+      const jwt = require("jsonwebtoken");
+      const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret";
+      const pendingToken = jwt.sign(
+        { name, email, passwordHash, upiId: upiId || null, otp, otpExpires },
+        JWT_SECRET,
+        { expiresIn: "15m" }
+      );
 
       await sendOtpEmail(email, otp);
 
       return NextResponse.json(
-        { success: true, email: dbUser.email, message: "Registration successful. Please check your email for the verification code." },
+        { success: true, data: { pendingToken, email }, message: "Registration successful. Please check your email for the verification code." },
         { status: 201 }
       );
     } else {

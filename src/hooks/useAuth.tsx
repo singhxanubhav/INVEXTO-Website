@@ -23,8 +23,8 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<ApiResponse<User>>;
-  register: (data: RegisterData) => Promise<ApiResponse<{email?: string, bypassedOtp?: boolean}>>;
-  verifyOtp: (email: string, otp: string) => Promise<ApiResponse<User>>;
+  register: (data: RegisterData) => Promise<ApiResponse<{email?: string, bypassedOtp?: boolean, pendingToken?: string}>>;
+  verifyOtp: (pendingToken: string, otp: string) => Promise<ApiResponse<User>>;
   logout: () => Promise<void>;
 }
 
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = useCallback(
     async (data: RegisterData) => {
-      const res = await apiPost<{email?: string, bypassedOtp?: boolean}>("/api/auth/register", data);
+      const res = await apiPost<{email?: string, bypassedOtp?: boolean, pendingToken?: string}>("/api/auth/register", data);
       if (res.success && res.data?.bypassedOtp) {
         apiGet<User>("/api/auth/me").then((meRes) => {
           if (meRes.success && meRes.data) {
@@ -73,8 +73,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const verifyOtp = useCallback(
-    async (email: string, otp: string) => {
-      const res = await apiPost<User>("/api/auth/verify-otp", { email, otp });
+    async (pendingToken: string, otp: string) => {
+      const res = await apiPost<User>("/api/auth/verify-otp", { pendingToken, otp });
       if (res.success && res.data) {
         setUser(res.data);
         router.push("/stocks");

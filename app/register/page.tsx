@@ -14,6 +14,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
+  const [pendingToken, setPendingToken] = useState<string | null>(null);
   const [otp, setOtp] = useState("");
 
   const handleRegister = async (data: RegisterData) => {
@@ -28,16 +29,17 @@ export default function RegisterPage() {
       } else {
         toast.success("OTP sent to your email");
         setRegisteredEmail(data.email);
+        setPendingToken(res.data?.pendingToken || null);
       }
     }
   };
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!registeredEmail || !otp) return;
+    if (!pendingToken || !otp) return;
 
     setLoading(true);
-    const res = await verifyOtp(registeredEmail, otp);
+    const res = await verifyOtp(pendingToken, otp);
     setLoading(false);
     
     if (!res.success) {
