@@ -6,6 +6,10 @@ import { cookies } from "next/headers";
 import { verifyToken } from "@/src/lib/auth";
 import { redirect } from "next/navigation";
 
+// Force this page to always render dynamically (never statically cache)
+// This is required so cookie-based auth checks work on Vercel
+export const dynamic = "force-dynamic";
+
 async function checkAdmin(): Promise<void> {
   const cookieStore = await cookies();
   const token = cookieStore.get("invexto_token")?.value;

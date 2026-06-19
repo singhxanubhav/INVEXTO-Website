@@ -1,6 +1,8 @@
 import { Metadata } from "next";
 import { AnalyticsDashboard } from "./components/AnalyticsDashboard";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Analytics | Admin Dashboard",
 };
