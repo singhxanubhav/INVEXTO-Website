@@ -178,3 +178,20 @@ model SimulationEvent {
 
   snapshots SimulationSnapshot[]
 }
+
+model VisitorEvent {
+  id          String   @id @default(cuid())
+  visitorId   String
+  sessionId   String
+  pagePath    String
+  countryCode String?
+  countryName String?
+  userAgent   String?
+  referrer    String?
+  visitedAt   DateTime @default(now())
+
+  @@index([visitedAt])
+  @@index([visitorId])
+  @@index([countryCode])
+}
+
