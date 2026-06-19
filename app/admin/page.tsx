@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { Shield, Users, Trophy } from "lucide-react";
 import Link from "next/link";
 import { Navbar } from "@/components/layout/Navbar";
