@@ -14,8 +14,8 @@ export function RecentVisitsTable({ data, loading }: Props) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent Visits</CardTitle>
-        <CardDescription>Latest activity on the platform</CardDescription>
+        <CardTitle>Recent Visitors</CardTitle>
+        <CardDescription>Latest unique visitors on the platform</CardDescription>
       </CardHeader>
       <CardContent>
         {loading || !data ? (
@@ -33,7 +33,6 @@ export function RecentVisitsTable({ data, loading }: Props) {
                 <TableRow>
                   <TableHead>Time</TableHead>
                   <TableHead>Country</TableHead>
-                  <TableHead>Page Path</TableHead>
                   <TableHead>Device</TableHead>
                   <TableHead className="hidden md:table-cell">Referrer</TableHead>
                 </TableRow>
@@ -41,8 +40,8 @@ export function RecentVisitsTable({ data, loading }: Props) {
               <TableBody>
                 {data.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
-                      No recent visits found.
+                    <TableCell colSpan={4} className="text-center py-10 text-muted-foreground">
+                      No recent visitors found.
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -58,9 +57,6 @@ export function RecentVisitsTable({ data, loading }: Props) {
                           </span>
                           <span className="hidden sm:inline">{visit.countryName}</span>
                         </div>
-                      </TableCell>
-                      <TableCell className="max-w-[200px] truncate font-medium">
-                        {visit.pagePath}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="flex items-center gap-1 w-fit">

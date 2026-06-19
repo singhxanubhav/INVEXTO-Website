@@ -9,15 +9,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const recentVisits = await prisma.visitorEvent.findMany({
-      take: 50,
+    const recentEvents = await prisma.visitorEvent.findMany({
+      take: 300,
       orderBy: { visitedAt: 'desc' },
       select: {
         id: true,
+        visitorId: true,
         visitedAt: true,
         countryCode: true,
         countryName: true,
-        pagePath: true,
         userAgent: true,
         referrer: true,
       }
@@ -30,10 +30,24 @@ export async function GET(req: NextRequest) {
       return "Desktop";
     };
 
-    const data = recentVisits.map(v => ({
-      ...v,
-      device: parseDevice(v.userAgent)
-    }));
+    const uniqueVisitorsMap = new Map();
+    
+    for (const event of recentEvents) {
+      if (!uniqueVisitorsMap.has(event.visitorId)) {
+        uniqueVisitorsMap.set(event.visitorId, {
+          id: event.id,
+          visitedAt: event.visitedAt,
+          countryCode: event.countryCode,
+          countryName: event.countryName,
+          device: parseDevice(event.userAgent),
+          referrer: event.referrer
+        });
+      }
+      
+      if (uniqueVisitorsMap.size >= 50) break;
+    }
+
+    const data = Array.from(uniqueVisitorsMap.values());
 
     return NextResponse.json(data);
   } catch (error) {
