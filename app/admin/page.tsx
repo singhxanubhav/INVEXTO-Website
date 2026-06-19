@@ -1,33 +1,50 @@
-import { Shield, Users, Trophy } from "lucide-react";
+"use client";
+
+import { useState, useEffect } from "react";
+import { Shield, Users, Trophy, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Navbar } from "@/components/layout/Navbar";
-import { prisma } from "@/src/lib/prisma";
-import { cookies } from "next/headers";
-import { verifyToken } from "@/src/lib/auth";
-import { redirect } from "next/navigation";
+import { useAuth } from "@/src/hooks/useAuth";
+import { useRouter } from "next/navigation";
 
-// Force this page to always render dynamically (never statically cache)
-// This is required so cookie-based auth checks work on Vercel
-export const dynamic = "force-dynamic";
-
-async function checkAdmin(): Promise<void> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("invexto_token")?.value;
-  if (!token) redirect("/");
-  const payload = verifyToken(token);
-  if (!payload?.isAdmin) redirect("/");
+interface AdminStats {
+  totalUsers: number;
+  activeParticipants: number;
+  activeTournament: { startDate: string; endDate: string } | null;
 }
 
-export default async function AdminDashboard() {
-  await checkAdmin();
+export default function AdminDashboard() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const totalUsers = await prisma.user.count();
-  const activeParticipants = await prisma.tournamentRegistration.count({
-    where: { tournament: { status: "active" } },
-  });
-  const activeTournament = await prisma.tournament.findFirst({
-    where: { status: "active" },
-  });
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user || !user.isAdmin) {
+      router.push("/");
+      return;
+    }
+
+    fetch("/api/admin/stats")
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success) setStats(json.data);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [user, authLoading, router]);
+
+  if (authLoading || (!user?.isAdmin && !authLoading)) {
+    return (
+      <>
+        <Navbar />
+        <div className="flex h-96 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -50,7 +67,9 @@ export default async function AdminDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-muted-foreground">Total Users</p>
-                <p className="mt-1 text-3xl font-bold text-foreground">{totalUsers}</p>
+                <p className="mt-1 text-3xl font-bold text-foreground">
+                  {loading ? "—" : stats?.totalUsers ?? 0}
+                </p>
               </div>
               <Users className="h-8 w-8 text-emerald-400" />
             </div>
@@ -59,14 +78,16 @@ export default async function AdminDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-muted-foreground">Active Tournament Participants</p>
-                <p className="mt-1 text-3xl font-bold text-foreground">{activeParticipants}</p>
+                <p className="mt-1 text-3xl font-bold text-foreground">
+                  {loading ? "—" : stats?.activeParticipants ?? 0}
+                </p>
               </div>
               <Trophy className="h-8 w-8 text-amber-400" />
             </div>
-            {activeTournament && (
+            {stats?.activeTournament && (
               <p className="mt-2 text-xs text-muted-foreground">
-                Ongoing: {activeTournament.startDate.toLocaleDateString("en-IN", { day: "numeric", month: "short" })} —{" "}
-                {activeTournament.endDate.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                Ongoing: {new Date(stats.activeTournament.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} —{" "}
+                {new Date(stats.activeTournament.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
               </p>
             )}
           </div>
