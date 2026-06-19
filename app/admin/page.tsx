@@ -18,20 +18,9 @@ import { redirect } from "next/navigation";
 export default async function AdminDashboard() {
   const cookieStore = await cookies();
   const token = cookieStore.get("invexto_token")?.value;
-  
-  if (!token) {
-    return <div className="flex h-screen items-center justify-center bg-red-950 p-10 text-center"><h1 className="text-2xl font-bold text-white">DEBUG ERROR: Token is completely missing from cookies() on the server!</h1></div>;
-  }
-  
+  if (!token) redirect("/");
   const payload = verifyToken(token);
-  
-  if (!payload) {
-    return <div className="flex h-screen items-center justify-center bg-red-950 p-10 text-center"><h1 className="text-2xl font-bold text-white">DEBUG ERROR: verifyToken returned null. Token signature is invalid or expired.</h1></div>;
-  }
-  
-  if (!payload.isAdmin) {
-    return <div className="flex h-screen items-center justify-center bg-red-950 p-10 text-center"><h1 className="text-2xl font-bold text-white">DEBUG ERROR: Token is valid, but payload.isAdmin is false!</h1></div>;
-  }
+  if (!payload?.isAdmin) redirect("/");
 
   const totalUsers = await prisma.user.count();
   const activeParticipants = await prisma.tournamentRegistration.count({
