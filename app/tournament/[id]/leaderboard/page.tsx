@@ -91,7 +91,7 @@ export default function LeaderboardPage({ params }: { params: Promise<{ id: stri
       <Navbar />
       <main className="relative mx-auto max-w-7xl w-full px-4 sm:px-6 lg:px-8 py-8">
         <button
-          onClick={() => router.push(`/tournament/${id}`)}
+          onClick={() => router.push(`/tournament`)}
           className="mb-4 flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
