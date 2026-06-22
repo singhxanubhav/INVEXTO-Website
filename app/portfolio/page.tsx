@@ -42,7 +42,7 @@ export default function PortfolioPage() {
       return;
     }
 
-    fetch("/api/tournament/active")
+    fetch(`/api/tournament/active?t=${Date.now()}`)
       .then((r) => r.json())
       .then((json) => {
         const isRegistered = json.success && json.data?.isRegistered;
@@ -61,7 +61,7 @@ export default function PortfolioPage() {
   useEffect(() => {
     if (!user || !initialized) return;
     setLoading(true);
-    fetch(`/api/portfolio?mode=${mode}`)
+    fetch(`/api/portfolio?mode=${mode}&t=${Date.now()}`)
       .then((res) => res.json())
       .then((json) => {
         if (json.success) {

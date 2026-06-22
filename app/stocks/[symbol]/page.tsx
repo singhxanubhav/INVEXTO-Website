@@ -30,6 +30,7 @@ export default function StockDetailPage({
   const [tournamentCash, setTournamentCash] = useState(0);
   const [tournamentQty, setTournamentQty] = useState(0);
   const [tradeTarget, setTradeTarget] = useState<"normal" | "tournament">("normal");
+  const [userDataLoading, setUserDataLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const { user } = useAuth();
   const prevModalOpen = useRef(false);
@@ -58,8 +59,12 @@ export default function StockDetailPage({
   }, [symbol]);
 
   useEffect(() => {
-    if (!user || !symbol) return;
+    if (!user || !symbol) {
+      setUserDataLoading(false);
+      return;
+    }
     
+    setUserDataLoading(true);
     Promise.all([
       fetch(`/api/portfolio?mode=normal&t=${Date.now()}`).then(r => r.json()),
       fetch(`/api/tournament/active?t=${Date.now()}`).then(r => r.json()),
@@ -80,9 +85,14 @@ export default function StockDetailPage({
             if (holding) setTournamentQty(holding.quantity);
             else setTournamentQty(0);
           }
-        }).catch(() => {});
+        }).catch(() => {})
+          .finally(() => setUserDataLoading(false));
+      } else {
+        setUserDataLoading(false);
       }
-    }).catch(() => {});
+    }).catch(() => {
+      setUserDataLoading(false);
+    });
   }, [user, symbol, refreshKey]);
 
   if (loading || !symbol) {
@@ -169,9 +179,10 @@ export default function StockDetailPage({
                   setModalOpen(true);
                 }}
                 className="bg-emerald-500 text-white hover:bg-emerald-400"
+                disabled={userDataLoading}
               >
                 <ShoppingCart className="mr-1.5 h-4 w-4" />
-                Buy
+                {userDataLoading ? "Loading..." : "Buy"}
               </Button>
               <Button
                 onClick={() => {
@@ -181,8 +192,9 @@ export default function StockDetailPage({
                 }}
                 variant="outline"
                 className="border-red-500/40 text-red-400 hover:bg-red-900/30"
+                disabled={userDataLoading}
               >
-                Sell
+                {userDataLoading ? "Loading..." : "Sell"}
               </Button>
             </div>
           )}
@@ -253,10 +265,10 @@ export default function StockDetailPage({
                     setModalOpen(true);
                   }}
                   className="w-full bg-emerald-500 text-white hover:bg-emerald-400"
-                  disabled={!user}
+                  disabled={!user || userDataLoading}
                 >
                   <ShoppingCart className="mr-1.5 h-4 w-4" />
-                  Buy {symbol.replace(".NS", "")}
+                  {userDataLoading ? "Loading..." : `Buy ${symbol.replace(".NS", "")}`}
                 </Button>
                 <Button
                   onClick={() => {
@@ -266,9 +278,9 @@ export default function StockDetailPage({
                   }}
                   variant="outline"
                   className="w-full border-red-500/40 text-red-400 hover:bg-red-900/30"
-                  disabled={!user}
+                  disabled={!user || userDataLoading}
                 >
-                  Sell {symbol.replace(".NS", "")}
+                  {userDataLoading ? "Loading..." : `Sell ${symbol.replace(".NS", "")}`}
                 </Button>
                 
 

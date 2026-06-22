@@ -33,7 +33,7 @@ export function Top5LeaderboardPreview({ tournamentId }: Props) {
 
   const fetchLeaderboard = useCallback(async () => {
     try {
-      const res = await fetch(`/api/tournament/leaderboard/${tournamentId}`);
+      const res = await fetch(`/api/tournament/leaderboard/${tournamentId}?t=${Date.now()}`);
       const json = await res.json();
       if (json.success && json.data) {
         setData(json.data);
