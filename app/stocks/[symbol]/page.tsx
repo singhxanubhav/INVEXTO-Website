@@ -164,7 +164,7 @@ export default function StockDetailPage({
             <div className="flex items-center gap-2">
               <Button
                 onClick={() => {
-                  setTradeTarget("normal");
+                  setTradeTarget(inTournament ? "tournament" : "normal");
                   setModalMode("buy");
                   setModalOpen(true);
                 }}
@@ -175,7 +175,7 @@ export default function StockDetailPage({
               </Button>
               <Button
                 onClick={() => {
-                  setTradeTarget("normal");
+                  setTradeTarget(inTournament ? "tournament" : "normal");
                   setModalMode("sell");
                   setModalOpen(true);
                 }}
@@ -248,7 +248,7 @@ export default function StockDetailPage({
               <div className="flex flex-col gap-2">
                 <Button
                   onClick={() => {
-                    setTradeTarget("normal");
+                    setTradeTarget(inTournament ? "tournament" : "normal");
                     setModalMode("buy");
                     setModalOpen(true);
                   }}
@@ -260,7 +260,7 @@ export default function StockDetailPage({
                 </Button>
                 <Button
                   onClick={() => {
-                    setTradeTarget("normal");
+                    setTradeTarget(inTournament ? "tournament" : "normal");
                     setModalMode("sell");
                     setModalOpen(true);
                   }}
@@ -271,35 +271,7 @@ export default function StockDetailPage({
                   Sell {symbol.replace(".NS", "")}
                 </Button>
                 
-                {inTournament && (
-                  <>
-                    <div className="my-2 border-t border-emerald-800/30" />
-                    <Button
-                      onClick={() => {
-                        setTradeTarget("tournament");
-                        setModalMode("buy");
-                        setModalOpen(true);
-                      }}
-                      className="w-full bg-amber-500 text-emerald-950 hover:bg-amber-400"
-                      disabled={!user}
-                    >
-                      <ShoppingCart className="mr-1.5 h-4 w-4" />
-                      Buy for Tournament
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        setTradeTarget("tournament");
-                        setModalMode("sell");
-                        setModalOpen(true);
-                      }}
-                      variant="outline"
-                      className="w-full border-red-500/40 text-red-400 hover:bg-red-900/30"
-                      disabled={!user}
-                    >
-                      Sell for Tournament
-                    </Button>
-                  </>
-                )}
+
 
                 {!user && (
                   <p className="text-center text-xs text-muted-foreground">

@@ -111,32 +111,7 @@ export default function PortfolioPage() {
           </p>
         </div>
 
-        {hasTournament && (
-          <div className="mb-6 inline-flex items-center rounded-xl border border-emerald-800/20 bg-emerald-950/40 p-1">
-            <button
-              onClick={() => setMode("normal")}
-              className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-                mode === "normal"
-                  ? "bg-emerald-600 text-white shadow-sm shadow-emerald-900/50"
-                  : "text-emerald-400/60 hover:text-emerald-300"
-              }`}
-            >
-              <Wallet className="h-4 w-4" />
-              Normal
-            </button>
-            <button
-              onClick={() => setMode("tournament")}
-              className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-                mode === "tournament"
-                  ? "bg-amber-500 text-emerald-950 shadow-sm shadow-amber-900/50"
-                  : "text-emerald-400/60 hover:text-emerald-300"
-              }`}
-            >
-              <Trophy className="h-4 w-4" />
-              Tournament
-            </button>
-          </div>
-        )}
+
 
         {mode === "tournament" && tournamentEndDate && (
           <div className="mb-6 rounded-xl border border-amber-800/20 bg-amber-950/20 px-4 py-3">
