@@ -69,9 +69,40 @@ export async function POST(request: Request) {
         select: { id: true, name: true, email: true, upiId: true, isAdmin: true, createdAt: true },
       });
 
-      await prisma.portfolio.create({
-        data: { userId: dbUser.id, cashBalance: 100000 },
-      });
+      const autoEnrollSetting = await prisma.systemSetting.findUnique({ where: { key: "autoTournamentEnrollment" } });
+      const autoEnroll = autoEnrollSetting ? autoEnrollSetting.value === "true" : true;
+
+      let enrolled = false;
+      if (autoEnroll) {
+        const activeTournament = await prisma.tournament.findFirst({
+          where: { status: "active" }
+        });
+        
+        if (activeTournament) {
+          await prisma.portfolio.create({
+            data: {
+              userId: dbUser.id,
+              cashBalance: 100000,
+              inTournament: true,
+              tournamentId: activeTournament.id,
+            },
+          });
+          
+          await prisma.tournamentRegistration.create({
+            data: {
+              tournamentId: activeTournament.id,
+              userId: dbUser.id,
+            },
+          });
+          enrolled = true;
+        }
+      }
+
+      if (!enrolled) {
+        await prisma.portfolio.create({
+          data: { userId: dbUser.id, cashBalance: 100000 },
+        });
+      }
 
       const token = await signToken({
         userId: dbUser.id,

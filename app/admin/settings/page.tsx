@@ -19,6 +19,7 @@ interface AdminUser {
 export default function AdminSettingsPage() {
   const { user } = useAuth();
   const [requireOtp, setRequireOtp] = useState(true);
+  const [autoTournament, setAutoTournament] = useState(true);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -32,6 +33,7 @@ export default function AdminSettingsPage() {
       .then((data) => {
         if (data.success && data.data) {
           setRequireOtp(data.data.requireOtpRegistration === "true");
+          setAutoTournament(data.data.autoTournamentEnrollment === "true");
         }
       })
       .catch(() => toast.error("Failed to load settings"))
@@ -69,6 +71,26 @@ export default function AdminSettingsPage() {
     } catch (err: any) {
       toast.error(err.message || "Failed to update setting");
       setRequireOtp(!checked); // revert
+    }
+  };
+
+  const toggleAutoTournament = async (checked: boolean) => {
+    setAutoTournament(checked);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "autoTournamentEnrollment", value: String(checked) })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Auto-Tournament Enrollment ${checked ? 'enabled' : 'disabled'}`);
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update setting");
+      setAutoTournament(!checked); // revert
     }
   };
 
@@ -131,7 +153,7 @@ export default function AdminSettingsPage() {
             <p className="text-sm text-muted-foreground">Configure how users register and authenticate on the platform.</p>
           </div>
           
-          <div className="flex items-center justify-between rounded-lg border border-emerald-800/30 bg-emerald-950/30 p-4">
+          <div className="flex items-center justify-between rounded-lg border border-emerald-800/30 bg-emerald-950/30 p-4 mb-4">
             <div className="space-y-0.5">
               <label className="text-base font-medium text-foreground">Require OTP Verification</label>
               <p className="text-sm text-muted-foreground">
@@ -139,6 +161,16 @@ export default function AdminSettingsPage() {
               </p>
             </div>
             <Switch checked={requireOtp} onCheckedChange={toggleOtp} />
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg border border-emerald-800/30 bg-emerald-950/30 p-4">
+            <div className="space-y-0.5">
+              <label className="text-base font-medium text-foreground">Automatic Tournament Enrollment</label>
+              <p className="text-sm text-muted-foreground">
+                If enabled, new users are automatically enrolled in the active tournament upon registration.
+              </p>
+            </div>
+            <Switch checked={autoTournament} onCheckedChange={toggleAutoTournament} />
           </div>
         </div>
 
