@@ -190,7 +190,7 @@ export default async function TournamentPage() {
                       </div>
                     </div>
                     <p className="text-xs text-emerald-600/80 mt-4">
-                      Stock holdings and rankings are visible on the full leaderboard.
+                      Top 5 rankings are visible on the leaderboard.
                     </p>
                   </div>
                 ) : (
