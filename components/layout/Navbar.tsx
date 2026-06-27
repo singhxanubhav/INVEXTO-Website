@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { TrendingUp, Menu, X, LayoutDashboard, Briefcase, Gamepad2, Trophy, BookOpen, Shield, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ export function Navbar() {
   const { user, loading, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [tournamentActive, setTournamentActive] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     fetch("/api/tournament/status")
@@ -28,8 +29,22 @@ export function Navbar() {
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
+      if (mobileOpen && navRef.current && !navRef.current.contains(event.target as Node)) {
+        setMobileOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, [mobileOpen]);
+
   return (
-    <nav className="sticky top-0 z-50 border-b border-emerald-800/40 bg-emerald-950/95 backdrop-blur supports-[backdrop-filter]:bg-emerald-950/80">
+    <nav ref={navRef} className="sticky top-0 z-50 border-b border-emerald-800/40 bg-emerald-950/95 backdrop-blur supports-[backdrop-filter]:bg-emerald-950/80">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2">
           <TrendingUp className="h-6 w-6 text-amber-400" />
