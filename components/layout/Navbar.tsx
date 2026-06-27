@@ -40,7 +40,7 @@ export function Navbar() {
 
         {!loading && user ? (
           <>
-            <div className="hidden items-center md:flex">
+            <div className="hidden items-center lg:flex space-x-1">
               {navLinks.map((link) => {
                 const isTournament = link.label === "Tournament";
                 const LinkComponent = isTournament ? "a" : Link;
@@ -62,7 +62,7 @@ export function Navbar() {
               })}
             </div>
 
-            <div className="hidden items-center md:flex ml-4">
+            <div className="hidden items-center lg:flex ml-4">
               <div className="relative group">
                 {/* Avatar Button */}
                 <div className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-emerald-800 text-sm font-bold text-white shadow-lg ring-2 ring-emerald-500/20 transition-all hover:scale-105 hover:ring-emerald-400/40">
@@ -105,7 +105,7 @@ export function Navbar() {
 
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="text-emerald-100 md:hidden"
+              className="text-emerald-100 lg:hidden"
               aria-label="Toggle menu"
             >
               {mobileOpen ? (
@@ -133,14 +133,14 @@ export function Navbar() {
           </div>
         ) : (
           <div className="flex items-center gap-3">
-            <div className="hidden h-9 w-20 animate-pulse rounded-lg bg-emerald-800/20 md:block"></div>
+            <div className="hidden h-9 w-20 animate-pulse rounded-lg bg-emerald-800/20 lg:block"></div>
             <div className="h-10 w-10 animate-pulse rounded-full bg-emerald-800/30"></div>
           </div>
         )}
       </div>
 
       {!loading && user && mobileOpen && (
-        <div className="border-t border-emerald-800/40 md:hidden">
+        <div className="border-t border-emerald-800/40 lg:hidden">
           <div className="space-y-1 px-4 py-3">
             {navLinks.map((link) => {
               const isTournament = link.label === "Tournament";

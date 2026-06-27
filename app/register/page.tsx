@@ -103,7 +103,7 @@ export default function RegisterPage() {
       </div>
 
       {/* Right Panel — Form */}
-      <div className="flex w-full items-center justify-center bg-gradient-to-br from-gray-950 via-gray-950 to-emerald-950/30 px-6 lg:w-1/2">
+      <div className="flex w-full items-center justify-center bg-gradient-to-br from-gray-950 via-gray-950 to-emerald-950/30 px-4 sm:px-6 lg:w-1/2">
         <div className="w-full max-w-sm animate-fade-in">
           {/* Mobile logo */}
           <Link

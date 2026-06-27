@@ -31,7 +31,7 @@ const features = [
 export function FeatureCards() {
   return (
     <section className="w-full px-4 pb-20">
-      <div className="mx-auto grid max-w-5xl gap-6 sm:grid-cols-3">
+      <div className="mx-auto grid max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {features.map((feature) => (
           <Card
             key={feature.title}
