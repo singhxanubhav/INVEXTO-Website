@@ -73,16 +73,18 @@ export function StockChart({
     if (range !== "1d" || !chartDate) return null;
 
     const now = new Date();
-    const istTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
-    const todayStr = istTime.toLocaleDateString("en-IN");
     
+    // Get YYYY-MM-DD strings directly in IST to avoid Vercel UTC parsing issues
+    const todayStr = now.toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
     const cDateObj = new Date(chartDate);
-    const cIstTime = new Date(cDateObj.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
-    const cDateStr = cIstTime.toLocaleDateString("en-IN");
+    const cDateStr = cDateObj.toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
     
-    const hours = istTime.getHours();
-    const minutes = istTime.getMinutes();
-    const day = istTime.getDay();
+    // Get current IST hour/minute directly
+    const istTimeStr = now.toLocaleString("en-US", { timeZone: "Asia/Kolkata", hour12: false });
+    const istDate = new Date(istTimeStr); // This is hacky but ok for hour/minute extraction
+    const hours = istDate.getHours();
+    const minutes = istDate.getMinutes();
+    const day = istDate.getDay();
     const isWeekendNow = day === 0 || day === 6;
     
     const isMarketOpen = 
@@ -109,7 +111,8 @@ export function StockChart({
         );
       }
     } else {
-      const formattedDate = cIstTime.toLocaleDateString("en-IN", { 
+      const formattedDate = cDateObj.toLocaleDateString("en-IN", { 
+        timeZone: "Asia/Kolkata",
         weekday: "short", 
         month: "short", 
         day: "numeric" 
