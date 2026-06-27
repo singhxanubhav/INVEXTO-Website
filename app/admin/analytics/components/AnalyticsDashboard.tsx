@@ -54,7 +54,7 @@ export function AnalyticsDashboard() {
   }, [range]);
 
   return (
-    <div className="flex flex-col gap-8 p-8 max-w-7xl mx-auto w-full">
+    <div className="flex flex-col gap-8 p-8 max-w-7xl mx-auto w-full min-w-0">
       <div className="mb-2">
         <Link
           href="/admin"
@@ -87,11 +87,11 @@ export function AnalyticsDashboard() {
 
       <KPIStatsCards data={data?.overview} loading={loading} />
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-w-0">
         <VisitorCharts data={data?.visitors || []} loading={loading} />
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-w-0">
         <CountryCharts data={data?.countries || []} loading={loading} />
       </div>
 
