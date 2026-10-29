@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { prisma } from "@/src/lib/prisma";
 import { requireSession } from "@/src/lib/session";
+import { isAutoTournamentEnrollmentEnabled, enrollAllUsersInTournament } from "@/src/lib/tournament";
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,6 +36,11 @@ export async function POST(request: NextRequest) {
         prizePool: { "1st": 50000, "2nd": 25000, "3rd": 10000 },
       },
     });
+
+    const autoEnroll = await isAutoTournamentEnrollmentEnabled();
+    if (autoEnroll) {
+      await enrollAllUsersInTournament(tournament.id);
+    }
 
     return NextResponse.json({ success: true, data: tournament });
   } catch (error) {

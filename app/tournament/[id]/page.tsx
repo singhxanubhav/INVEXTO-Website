@@ -9,6 +9,7 @@ import { RegisterForm } from "@/components/tournament/RegisterForm";
 import { prisma } from "@/src/lib/prisma";
 import { verifyToken } from "@/src/lib/auth";
 import { Top5LeaderboardPreview } from "@/src/components/tournament/Top5LeaderboardPreview";
+import { isAutoTournamentEnrollmentEnabled, ensureUserTournamentEnrollment } from "@/src/lib/tournament";
 
 async function getUserId(): Promise<string | null> {
   const cookieStore = await cookies();
@@ -31,7 +32,7 @@ async function getTournamentData(tournamentId: string, userId: string) {
     return { isCompleted: true as const, tournamentId };
   }
 
-  const [registration, totalParticipants, dbPortfolio] = await Promise.all([
+  let [registration, totalParticipants, dbPortfolio] = await Promise.all([
     prisma.tournamentRegistration.findUnique({
       where: {
         tournamentId_userId: {
@@ -47,6 +48,29 @@ async function getTournamentData(tournamentId: string, userId: string) {
       where: { userId, inTournament: true, tournamentId },
     })
   ]);
+
+  if (!registration && tournament.status === "active") {
+    const autoEnroll = await isAutoTournamentEnrollmentEnabled();
+    if (autoEnroll) {
+      await ensureUserTournamentEnrollment(userId, tournamentId);
+      [registration, totalParticipants, dbPortfolio] = await Promise.all([
+        prisma.tournamentRegistration.findUnique({
+          where: {
+            tournamentId_userId: {
+              tournamentId,
+              userId,
+            },
+          },
+        }),
+        prisma.tournamentRegistration.count({
+          where: { tournamentId },
+        }),
+        prisma.portfolio.findFirst({
+          where: { userId, inTournament: true, tournamentId },
+        })
+      ]);
+    }
+  }
 
   let portfolio = null;
   let rank = null; // Currently not calculated dynamically here, to be fetched from leaderboard if needed

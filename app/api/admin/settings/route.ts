@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/lib/prisma";
 import { requireSession } from "@/src/lib/session";
+import { enrollAllUsersInTournament } from "@/src/lib/tournament";
 
 export async function GET(req: NextRequest) {
   try {
@@ -45,6 +46,15 @@ export async function PATCH(req: NextRequest) {
       update: { value: String(value) },
       create: { key, value: String(value) }
     });
+
+    if (key === "autoTournamentEnrollment" && String(value) === "true") {
+      const activeTournament = await prisma.tournament.findFirst({
+        where: { status: "active" },
+      });
+      if (activeTournament) {
+        await enrollAllUsersInTournament(activeTournament.id);
+      }
+    }
 
     return NextResponse.json({ success: true, message: "Setting updated" });
   } catch (error) {

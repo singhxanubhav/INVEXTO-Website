@@ -15,11 +15,12 @@ export async function GET(request: NextRequest) {
     const mode = searchParams.get("mode") || "normal";
 
     let where: any = { userId: user.id };
+    let activeTournament: any = null;
 
     if (mode === "normal") {
       where.inTournament = false;
     } else if (mode === "tournament") {
-      const activeTournament = await prisma.tournament.findFirst({
+      activeTournament = await prisma.tournament.findFirst({
         where: { status: "active" }
       });
       where.inTournament = true;
@@ -45,8 +46,14 @@ export async function GET(request: NextRequest) {
     });
 
     if (!portfolio) {
+      const isTournament = mode === "tournament" && activeTournament;
       const fresh = await prisma.portfolio.create({
-        data: { userId: user.id, cashBalance: 100000 },
+        data: {
+          userId: user.id,
+          cashBalance: 100000,
+          inTournament: !!isTournament,
+          tournamentId: isTournament ? activeTournament.id : null,
+        },
       });
       return NextResponse.json({
         success: true,
@@ -58,8 +65,8 @@ export async function GET(request: NextRequest) {
           unrealizedGain: 0,
           todayGain: 0,
           realizedGainTillDate: 0,
-          inTournament: false,
-          tournamentId: null,
+          inTournament: fresh.inTournament,
+          tournamentId: fresh.tournamentId,
         },
       });
     }

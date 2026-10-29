@@ -12,6 +12,7 @@ import { CountdownTimer } from "@/components/tournament/CountdownTimer";
 import { prisma } from "@/src/lib/prisma";
 import { verifyToken } from "@/src/lib/auth";
 import { Top5LeaderboardPreview } from "@/src/components/tournament/Top5LeaderboardPreview";
+import { isAutoTournamentEnrollmentEnabled, ensureUserTournamentEnrollment } from "@/src/lib/tournament";
 
 function getNextMonthStart(): Date {
   const now = new Date();
@@ -42,7 +43,7 @@ async function getTournamentData(userId: string) {
     return null;
   }
 
-  const [registration, totalParticipants, dbPortfolio] = await Promise.all([
+  let [registration, totalParticipants, dbPortfolio] = await Promise.all([
     prisma.tournamentRegistration.findUnique({
       where: {
         tournamentId_userId: {
@@ -58,6 +59,29 @@ async function getTournamentData(userId: string) {
       where: { userId, inTournament: true, tournamentId: tournament.id },
     })
   ]);
+
+  if (!registration) {
+    const autoEnroll = await isAutoTournamentEnrollmentEnabled();
+    if (autoEnroll) {
+      await ensureUserTournamentEnrollment(userId, tournament.id);
+      [registration, totalParticipants, dbPortfolio] = await Promise.all([
+        prisma.tournamentRegistration.findUnique({
+          where: {
+            tournamentId_userId: {
+              tournamentId: tournament.id,
+              userId,
+            },
+          },
+        }),
+        prisma.tournamentRegistration.count({
+          where: { tournamentId: tournament.id },
+        }),
+        prisma.portfolio.findFirst({
+          where: { userId, inTournament: true, tournamentId: tournament.id },
+        })
+      ]);
+    }
+  }
 
   let portfolio = null;
 

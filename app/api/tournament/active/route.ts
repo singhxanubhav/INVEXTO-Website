@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/lib/prisma";
 import { requireSession } from "@/src/lib/session";
 import { fetchQuote } from "@/src/lib/yahoo-finance";
+import { isAutoTournamentEnrollmentEnabled, ensureUserTournamentEnrollment } from "@/src/lib/tournament";
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: true, data: null });
     }
 
-    const registration = await prisma.tournamentRegistration.findUnique({
+    let registration = await prisma.tournamentRegistration.findUnique({
       where: {
         tournamentId_userId: {
           tournamentId: tournament.id,
@@ -23,6 +24,21 @@ export async function GET(req: NextRequest) {
         },
       },
     });
+
+    if (!registration) {
+      const autoEnroll = await isAutoTournamentEnrollmentEnabled();
+      if (autoEnroll) {
+        await ensureUserTournamentEnrollment(user.id, tournament.id);
+        registration = await prisma.tournamentRegistration.findUnique({
+          where: {
+            tournamentId_userId: {
+              tournamentId: tournament.id,
+              userId: user.id,
+            },
+          },
+        });
+      }
+    }
 
     const totalParticipants = await prisma.tournamentRegistration.count({
       where: { tournamentId: tournament.id },
