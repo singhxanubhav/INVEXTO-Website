@@ -1,6 +1,7 @@
 import cron from "node-cron";
 import { prisma } from "@/src/lib/prisma";
-import { fetchQuote } from "@/src/lib/yahoo-finance";
+import { fetchQuotes } from "@/src/lib/yahoo-finance";
+import { enrollAllUsersInTournament } from "@/src/lib/tournament";
 
 function getTodayInIST(): Date {
   const now = new Date();
@@ -38,7 +39,7 @@ async function createNewTournament() {
   const startDate = getCurrentMonthStart();
   const endDate = getCurrentMonthEnd();
 
-  await prisma.tournament.create({
+  const tournament = await prisma.tournament.create({
     data: {
       startDate,
       endDate,
@@ -46,6 +47,12 @@ async function createNewTournament() {
       prizePool: { first: 1000, second: 750, third: 500, fourth: 250, fifth: 250 },
     },
   });
+
+  try {
+    await enrollAllUsersInTournament(tournament.id);
+  } catch (err) {
+    console.error("[Cron] Error auto-enrolling users in new tournament:", err);
+  }
 
   console.log(`[Cron] New tournament created for ${getMonthName(now)}`);
 }
@@ -72,10 +79,16 @@ async function resetPortfolioAfterTournament(tournamentId: string) {
 }
 
 async function closeTournamentAndComputeWinners(tournamentId: string) {
-  const registrations = await prisma.tournamentRegistration.findMany({
-    where: { tournamentId },
-    include: { user: true },
-  });
+  const [registrations, portfolios] = await Promise.all([
+    prisma.tournamentRegistration.findMany({
+      where: { tournamentId },
+      include: { user: true },
+    }),
+    prisma.portfolio.findMany({
+      where: { tournamentId, inTournament: true },
+      include: { holdings: { include: { stock: true } } },
+    }),
+  ]);
 
   if (registrations.length === 0) {
     console.log("[Cron] No registrations for tournament, skipping");
@@ -83,13 +96,20 @@ async function closeTournamentAndComputeWinners(tournamentId: string) {
     return;
   }
 
+  const portfolioMap = new Map(portfolios.map((p) => [p.userId, p]));
+  const symbolsSet = new Set<string>();
+  for (const p of portfolios) {
+    for (const h of p.holdings) {
+      if (h.stock?.symbol) symbolsSet.add(h.stock.symbol);
+    }
+  }
+
+  const quotes = symbolsSet.size > 0 ? await fetchQuotes(Array.from(symbolsSet)) : {};
+
   const results: { registrationId: string; userId: string; totalValue: number }[] = [];
 
   for (const reg of registrations) {
-    const portfolio = await prisma.portfolio.findFirst({
-      where: { userId: reg.userId, inTournament: true, tournamentId },
-      include: { holdings: { include: { stock: true } } },
-    });
+    const portfolio = portfolioMap.get(reg.userId);
 
     if (!portfolio) {
       results.push({ registrationId: reg.id, userId: reg.userId, totalValue: 100000 });
@@ -99,13 +119,8 @@ async function closeTournamentAndComputeWinners(tournamentId: string) {
     let stockValue = 0;
     for (const h of portfolio.holdings) {
       if (h.quantity <= 0) continue;
-      let price = 0;
-      try {
-        const quote = await fetchQuote(h.stock.symbol);
-        price = quote?.regularMarketPrice ? Number(quote.regularMarketPrice) : Number(h.avgBuyPrice);
-      } catch {
-        price = Number(h.avgBuyPrice);
-      }
+      const q = quotes[h.stock.symbol];
+      const price = q?.regularMarketPrice ? Number(q.regularMarketPrice) : Number(h.avgBuyPrice);
       stockValue += h.quantity * price;
     }
 

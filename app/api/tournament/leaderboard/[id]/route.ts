@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/lib/prisma";
-import { fetchQuote } from "@/src/lib/yahoo-finance";
+import { fetchQuotes } from "@/src/lib/yahoo-finance";
 import { SimpleCache } from "@/src/lib/simple-cache";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -31,58 +31,72 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       });
     }
 
-    const registrations = await prisma.tournamentRegistration.findMany({
-      where: { tournamentId: tournament.id },
-      include: {
-        user: true,
-      },
-    });
+    const [registrations, portfolios] = await Promise.all([
+      prisma.tournamentRegistration.findMany({
+        where: { tournamentId: tournament.id },
+        include: {
+          user: { select: { id: true, name: true } },
+        },
+      }),
+      prisma.portfolio.findMany({
+        where: { tournamentId: tournament.id, inTournament: true },
+        include: {
+          holdings: {
+            where: { quantity: { gt: 0 } },
+            include: { stock: { select: { symbol: true } } },
+          },
+        },
+      }),
+    ]);
 
-    const entries = await Promise.all(
-      registrations.map(async (reg) => {
-        const portfolio = await prisma.portfolio.findFirst({
-          where: { userId: reg.userId, inTournament: true, tournamentId: tournament.id },
-          include: { holdings: { include: { stock: true } } },
-        });
+    const portfolioMap = new Map(portfolios.map((p) => [p.userId, p]));
 
-        if (!portfolio) {
-          return {
-            userId: reg.userId,
-            name: reg.user.name,
-            totalValue: 100000,
-            unrealizedGain: 0,
-            unrealizedGainPct: 0,
-            prizeAmount: 0,
-          };
+    const symbolsSet = new Set<string>();
+    for (const p of portfolios) {
+      for (const h of p.holdings) {
+        if (h.stock?.symbol) {
+          symbolsSet.add(h.stock.symbol);
         }
+      }
+    }
 
-        let stockValue = 0;
-        for (const h of portfolio.holdings) {
-          if (h.quantity <= 0) continue;
-          let price = 0;
-          try {
-            const quote = await fetchQuote(h.stock.symbol);
-            price = quote?.regularMarketPrice ? Number(quote.regularMarketPrice) : Number(h.avgBuyPrice);
-          } catch {
-            price = Number(h.avgBuyPrice);
-          }
-          stockValue += h.quantity * price;
-        }
+    const quotes = symbolsSet.size > 0 ? await fetchQuotes(Array.from(symbolsSet)) : {};
 
-        const totalValue = stockValue + Number(portfolio.cashBalance);
-        const unrealizedGain = totalValue - 100000;
-        const unrealizedGainPct = (unrealizedGain / 100000) * 100;
+    const entries = registrations.map((reg) => {
+      const portfolio = portfolioMap.get(reg.userId);
 
+      if (!portfolio) {
         return {
           userId: reg.userId,
           name: reg.user.name,
-          totalValue: Math.round(totalValue * 100) / 100,
-          unrealizedGain: Math.round(unrealizedGain * 100) / 100,
-          unrealizedGainPct: Math.round(unrealizedGainPct * 100) / 100,
+          totalValue: 100000,
+          unrealizedGain: 0,
+          unrealizedGainPct: 0,
           prizeAmount: 0,
         };
-      })
-    );
+      }
+
+      let stockValue = 0;
+      for (const h of portfolio.holdings) {
+        if (h.quantity <= 0) continue;
+        const q = quotes[h.stock.symbol];
+        const price = q?.regularMarketPrice ? Number(q.regularMarketPrice) : Number(h.avgBuyPrice);
+        stockValue += h.quantity * price;
+      }
+
+      const totalValue = stockValue + Number(portfolio.cashBalance);
+      const unrealizedGain = totalValue - 100000;
+      const unrealizedGainPct = (unrealizedGain / 100000) * 100;
+
+      return {
+        userId: reg.userId,
+        name: reg.user.name,
+        totalValue: Math.round(totalValue * 100) / 100,
+        unrealizedGain: Math.round(unrealizedGain * 100) / 100,
+        unrealizedGainPct: Math.round(unrealizedGainPct * 100) / 100,
+        prizeAmount: 0,
+      };
+    });
 
     entries.sort((a, b) => b.totalValue - a.totalValue);
 
