@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Shield, ArrowLeft, Trophy, Loader2, Check } from "lucide-react";
+import { Shield, ArrowLeft, Trophy, Loader2, Check, Users, Download } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,6 +23,7 @@ export default function AdminTournamentPage() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [closingId, setClosingId] = useState<string | null>(null);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [editStartDate, setEditStartDate] = useState("");
@@ -97,6 +98,28 @@ export default function AdminTournamentPage() {
       toast.error("Failed to close tournament");
     } finally {
       setClosingId(null);
+    }
+  };
+
+  const handleSyncUsers = async (tournamentId: string) => {
+    setSyncingId(tournamentId);
+    try {
+      const res = await fetch("/api/admin/tournament/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tournamentId }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        toast.success(json.message || "All users registered into tournament!");
+        fetchData();
+      } else {
+        toast.error(json.error || "Failed to sync users");
+      }
+    } catch {
+      toast.error("Failed to sync users");
+    } finally {
+      setSyncingId(null);
     }
   };
 
@@ -311,6 +334,27 @@ export default function AdminTournamentPage() {
                   </Button>
                 )}
                 <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleSyncUsers(activeTournament.id)}
+                  disabled={syncingId === activeTournament.id}
+                  className="border-emerald-700/50 bg-emerald-950/40 text-emerald-400 hover:bg-emerald-900/50 hover:text-emerald-300"
+                >
+                  {syncingId === activeTournament.id ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Users className="mr-2 h-4 w-4" />
+                  )}
+                  {syncingId === activeTournament.id ? "Syncing..." : "Sync All Users"}
+                </Button>
+                <a
+                  href={`/api/admin/tournament/export?type=participants&tournamentId=${activeTournament.id}`}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-700/50 bg-emerald-950/40 px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-900/50 transition"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Export CSV
+                </a>
+                <Button
                   variant="destructive"
                   size="sm"
                   onClick={() => handleClose(activeTournament.id)}
@@ -342,6 +386,15 @@ export default function AdminTournamentPage() {
                     </span>
                   </p>
                 </div>
+                {t.status === "completed" && (
+                  <a
+                    href={`/api/admin/tournament/export?type=winners&tournamentId=${t.id}`}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-800/30 bg-emerald-950/40 px-3 py-1.5 text-xs text-emerald-300 hover:bg-emerald-900/40 transition"
+                  >
+                    <Download className="h-3 w-3" />
+                    Export Winners CSV
+                  </a>
+                )}
               </div>
 
               {t.status === "completed" && t.winners.length > 0 && (

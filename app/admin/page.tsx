@@ -1,38 +1,23 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Shield, Users, Trophy, Loader2 } from "lucide-react";
+import { Shield, Users, Trophy, Loader2, Activity, Settings, BarChart3 } from "lucide-react";
 import Link from "next/link";
 import { Navbar } from "@/components/layout/Navbar";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useRouter } from "next/navigation";
-
-interface AdminStats {
-  totalUsers: number;
-  activeParticipants: number;
-  activeTournament: { startDate: string; endDate: string } | null;
-}
+import { TournamentLiveMonitor } from "@/components/admin/TournamentLiveMonitor";
+import { LiveTradesFeed } from "@/components/admin/LiveTradesFeed";
 
 export default function AdminDashboard() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [stats, setStats] = useState<AdminStats | null>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (authLoading) return;
     if (!user || !user.isAdmin) {
       router.push("/");
-      return;
     }
-
-    fetch("/api/admin/stats")
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.success) setStats(json.data);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
   }, [user, authLoading, router]);
 
   if (authLoading || (!user?.isAdmin && !authLoading)) {
@@ -49,96 +34,92 @@ export default function AdminDashboard() {
   return (
     <>
       <Navbar />
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-8 flex items-center gap-3">
-          <Shield className="h-8 w-8 text-amber-400" />
-          <div>
-            <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
-              Admin Dashboard
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Manage users and tournaments
-            </p>
-          </div>
-        </div>
-
-        <div className="mb-8 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-xl border border-emerald-800/30 bg-emerald-900/20 p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">Total Users</p>
-                <p className="mt-1 text-3xl font-bold text-foreground">
-                  {loading ? "—" : stats?.totalUsers ?? 0}
-                </p>
-              </div>
-              <Users className="h-8 w-8 text-emerald-400" />
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 lg:px-8 space-y-8">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex size-12 items-center justify-center rounded-2xl bg-amber-500/20 text-amber-400">
+              <Shield className="h-7 w-7" />
             </div>
-          </div>
-          <div className="rounded-xl border border-amber-800/30 bg-amber-900/20 p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">Active Tournament Participants</p>
-                <p className="mt-1 text-3xl font-bold text-foreground">
-                  {loading ? "—" : stats?.activeParticipants ?? 0}
-                </p>
-              </div>
-              <Trophy className="h-8 w-8 text-amber-400" />
-            </div>
-            {stats?.activeTournament && (
-              <p className="mt-2 text-xs text-muted-foreground">
-                Ongoing: {new Date(stats.activeTournament.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })} —{" "}
-                {new Date(stats.activeTournament.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+            <div>
+              <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
+                Admin Command Center
+              </h1>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Real-time tournament monitoring, live operations, and platform analytics
               </p>
-            )}
+            </div>
           </div>
         </div>
 
+        {/* Quick Navigation Cards */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Link
             href="/admin/users"
-            className="group rounded-xl border border-emerald-800/30 bg-emerald-900/20 p-5 transition-all hover:border-emerald-700/50 hover:bg-emerald-900/40"
+            className="group rounded-2xl border border-emerald-800/30 bg-emerald-950/20 p-5 transition-all hover:border-emerald-700/50 hover:bg-emerald-950/40"
           >
-            <h2 className="text-lg font-semibold text-foreground group-hover:text-amber-400 transition-colors">
-              Users
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              View all registered users, their portfolios, and tournament history
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-bold text-foreground group-hover:text-emerald-400 transition-colors">
+                Users Management
+              </h2>
+              <Users className="h-5 w-5 text-emerald-400" />
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Search all 2,000+ users, inspect holdings, audit UPIs & trades
             </p>
           </Link>
+
           <Link
             href="/admin/tournament"
-            className="group rounded-xl border border-emerald-800/30 bg-emerald-900/20 p-5 transition-all hover:border-emerald-700/50 hover:bg-emerald-900/40"
+            className="group rounded-2xl border border-amber-800/30 bg-amber-950/20 p-5 transition-all hover:border-amber-700/50 hover:bg-amber-950/40"
           >
-            <h2 className="text-lg font-semibold text-foreground group-hover:text-amber-400 transition-colors">
-              Tournament
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Manage tournaments, view registrations, process prize payouts
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-bold text-foreground group-hover:text-amber-400 transition-colors">
+                Tournaments & Payouts
+              </h2>
+              <Trophy className="h-5 w-5 text-amber-400" />
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Sync participants, edit tournament dates, record prize payouts
             </p>
           </Link>
+
           <Link
             href="/admin/analytics"
-            className="group rounded-xl border border-emerald-800/30 bg-emerald-900/20 p-5 transition-all hover:border-emerald-700/50 hover:bg-emerald-900/40"
+            className="group rounded-2xl border border-emerald-800/30 bg-emerald-950/20 p-5 transition-all hover:border-emerald-700/50 hover:bg-emerald-950/40"
           >
-            <h2 className="text-lg font-semibold text-foreground group-hover:text-amber-400 transition-colors">
-              Analytics
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Monitor website traffic, visitors, top countries, and platform usage
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-bold text-foreground group-hover:text-emerald-400 transition-colors">
+                Web Analytics
+              </h2>
+              <BarChart3 className="h-5 w-5 text-emerald-400" />
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Live visitors, country breakdowns, sessions, and pageviews
             </p>
           </Link>
+
           <Link
             href="/admin/settings"
-            className="group rounded-xl border border-emerald-800/30 bg-emerald-900/20 p-5 transition-all hover:border-emerald-700/50 hover:bg-emerald-900/40"
+            className="group rounded-2xl border border-emerald-800/30 bg-emerald-950/20 p-5 transition-all hover:border-emerald-700/50 hover:bg-emerald-950/40"
           >
-            <h2 className="text-lg font-semibold text-foreground group-hover:text-amber-400 transition-colors">
-              Settings
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Manage global authentication settings and Super Admin roles
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-bold text-foreground group-hover:text-emerald-400 transition-colors">
+                System Settings
+              </h2>
+              <Settings className="h-5 w-5 text-emerald-400" />
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              OTP verification, auto-enrollment toggle, Super Admin access
             </p>
           </Link>
         </div>
+
+        {/* Live Tournament & Market Operations Monitor */}
+        <TournamentLiveMonitor />
+
+        {/* Real-time Trades Feed */}
+        <LiveTradesFeed />
       </main>
     </>
   );
